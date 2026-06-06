@@ -8,36 +8,33 @@
 </head>
 <body>
     <div class="container">
-        <div style="margin-bottom: 10px;"
-        <img src="wedding_logo.png" alt="Wedding Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
+        <div class="logo-container">
+            <img src="wedding_logo.png" alt="Wedding Logo" class="logo">
+        </div>
+
+        <h2 class="title">Reset Password</h2>
+
+        <div class="form-card">
+            <p class="instruction">Please type something you will remember.</p>
+
+            <form action="#" method="POST">
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" placeholder="Enter New Passsword" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Confirm New Password</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm Your New Password" required>
+                </div>
+
+                <button type="submit" class="btn-reset">Reset Password</button>
+
+                <div class="login-link">
+                    Already have an account ? <a href="#">Login here</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <h2 class="title">Reset Password</h2>
-
-    <div class="form-card">
-        <p class="instruction">Please type something you will remember.</p>
-
-        <form action="#" method="POST">
-            
-            <div class="form-group">
-                <label for="new-password">New Password</label>
-                <input type="password" id="new-password" placeholder="Enter your new password" required>
-            </div>
-
-            <div class="form-group">
-                <label for="confirm-password">Confirm Password</label>
-                <input type="password" id="confirm-password" placeholder="Confirm your new password" required>
-            </div>
-
-            <button type="submit" class="btn-reset">Reset Password</button>
-
-            <div class="login-link">
-                Already have an account? <a href="#">Login here</a>
-
-        </form>
-    </div>
-
-
-    
 </body>
 </html>
