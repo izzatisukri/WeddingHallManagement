@@ -7,13 +7,34 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="reset-card">
-        <div>
-            <div class="brand-title">
-                <span class="WEDDING"></span>
-                <span class="HALL"></span>
-                <span class="MANAGEMENT"></span>
+    <div class="container">
+        <div style="margin-bottom: 10px;"
+        <img src="wedding_logo.png" alt="Wedding Logo" style="max-width: 180px; height: auto; display: block; margin: 0 auto;">
+    </div>
+
+    <h2 class="title">Reset Password</h2>
+
+    <div class="form-card">
+        <p class="instruction">Please type something you will remember.</p>
+
+        <form action="#" method="POST">
+            
+            <div class="form-group">
+                <label for="new-password">New Password</label>
+                <input type="password" id="new-password" placeholder="Enter your new password" required>
             </div>
+
+            <div class="form-group">
+                <label for="confirm-password">Confirm Password</label>
+                <input type="password" id="confirm-password" placeholder="Confirm your new password" required>
+            </div>
+
+            <button type="submit" class="btn-reset">Reset Password</button>
+
+            <div class="login-link">
+                Already have an account? <a href="#">Login here</a>
+
+        </form>
     </div>
 
 
