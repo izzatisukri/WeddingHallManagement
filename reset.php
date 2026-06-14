@@ -22,7 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $message = "Passwords do not match!";
     }
     else {
-
         $user_id = $_SESSION['user_id'];
         $role = $_SESSION['user_role'];
 
@@ -39,8 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $message = "Password must contain at least 1 symbol!";
         }
         else {
-
-            // tentukan table ikut role
             $table_name = "";
             if ($role == 'customer') {
                 $table_name = "customer";
@@ -53,17 +50,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             if ($table_name != "") {
+                
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-                $query = "UPDATE $table_name SET password = '$new_password' WHERE id = '$user_id'";
+                $query = "UPDATE $table_name SET password = ? WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $query);
 
-                if (mysqli_query($conn, $query)) {
-                    $message = "Password updated successfully for " . strtoupper($role) . " account!";
-                    $message_color = "green";
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, "si", $hashed_password, $user_id);
+                    
+                    if (mysqli_stmt_execute($stmt)) {
+                        $message = "Password updated successfully for " . strtoupper($role) . " account!";
+                        $message_color = "green";
+                    } else {
+                        $message = "Failed to update password: " . mysqli_stmt_error($stmt);
+                    }
+                    mysqli_stmt_close($stmt);
+                } else {
+                    $message = "Database query error.";
                 }
-                else {
-                    $message = "Failed to update password: " . mysqli_error($conn);
-                }
-
             }
             else {
                 $message = "Invalid user role!";
@@ -72,7 +77,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-    
 
 <!DOCTYPE html>
 <html lang="en">
@@ -82,7 +86,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <title>Reset Password</title>
 
 <style>
-    
 * {
     margin: 0;
     padding: 0;
@@ -91,29 +94,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 body {
     font-family: 'Georgia', Times, serif;
-    background: #710349;
+    background: linear-gradient(135deg, #710349 0%, #4a022f 100%);
     min-height: 100vh;
     width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 20px;
+    padding: 20px;
 }
 
 .container {
     text-align: center;
     width: 100%;
-    max-width: 700px;
+    max-width: 500px;
 }
 
 .logo-container {
-    margin-bottom: 0;
+    margin-bottom: 10px;
     width: 100%;
 }
 
 .logo {
     width: 100%;
-    max-width: 320px;
+    max-width: 260px;
     height: auto;
     display: block;
     margin: 0 auto;
@@ -121,54 +124,82 @@ body {
 
 .title {
     color: white;
-    font-size: 28px;
-    margin: 5px 0 15px 0;
-    font-weight: normal;
-    letter-spacing: 1px;
+    font-size: 26px;
+    margin: 5px 0 25px 0;
+    font-weight: 300;
+    letter-spacing: 1.5px;
 }
 
 .form-card {
-    background-color: #DCDCDC;
-    border-radius: 30px;
-    padding: 30px 45px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 40px 35px;
     text-align: left;
-    box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 15px 35px #330121;
     width: 100%;
 }
 
 .instruction {
-    color: black;
-    font-size: 16px;
+    color: #666;
+    font-size: 15px;
     text-align: center;
     margin-bottom: 20px;
+    font-weight: normal;
+}
+
+.alert-message {
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
     font-weight: 500;
+}
+.alert-red {
+    background-color: #fde8e8;
+    color: #e53e3e;
+    border: 1px solid #f8b4b4;
+}
+.alert-green {
+    background-color: #def7ec;
+    color: #03543f;
+    border: 1px solid #84e1bc;
 }
 
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
     display: block;
-    font-size: 17px;
-    color: black;
+    font-size: 14px;
+    color: #333;
     margin-bottom: 8px;
-    font-weight: bold;
+    font-weight: 600;
+    letter-spacing: 0.5px;
 }
 
 .form-group input {
     width: 100%;
-    padding: 13px 18px;
-    border: none;
-    border-radius: 10px;
-    font-size: 16px;
-    color: black;
-    background-color: white;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    color: #333;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #710349;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px #f1e6ed;
 }
 
 .form-group input::placeholder {
-    color: #A49A9A;
-    font-size: 16px;
+    color: #b3b3b3;
+    font-size: 14px;
 }
 
 .btn-reset {
@@ -176,35 +207,42 @@ body {
     background-color: #710349;
     color: white;
     border: none;
-    border-radius: 35px;
+    border-radius: 8px;
     padding: 14px;
-    font-size: 18px;
+    font-size: 16px;
     font-family: 'Georgia', serif;
     cursor: pointer;
     text-transform: uppercase;
-    margin-top: 10px;
-    margin-bottom: 15px;
-    letter-spacing: 1px;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    letter-spacing: 1.5px;
     font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.1s ease;
 }
 
 .btn-reset:hover {
-    background-color: #710349;
+    background-color: #540236;
+}
+
+.btn-reset:active {
+    transform: scale(0.98);
 }
 
 .login-link {
     text-align: center;
-    font-size: 16px;
-    color: black;
+    font-size: 14px;
+    color: #666;
 }
 
 .login-link a {
-    color: #5778FE;
+    color: #710349;
     text-decoration: none;
     font-weight: bold;
+    transition: color 0.2s ease;
 }
 
 .login-link a:hover {
+    color: #4a022f;
     text-decoration: underline;
 }
 </style>
@@ -221,21 +259,27 @@ body {
         <div class="form-card">
             <p class="instruction">Please type something you will remember.</p>
 
-            <form action="#" method="POST">
+            <?php if ($message != ""): ?>
+                <div class="alert-message alert-<?php echo $message_color; ?>">
+                    <?php echo $message; ?>
+                </div>
+            <?php endif; ?>
+
+            <form action="" method="POST">
                 <div class="form-group">
                     <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" placeholder="Enter New Passsword" required>
+                    <input type="password" id="new-password" name="new_password" placeholder="Enter New Password" required>
                 </div>
 
                 <div class="form-group">
                     <label for="confirm-password">Confirm New Password</label>
-                    <input type="password" id="confirm-password" placeholder="Confirm Your New Password" required>
+                    <input type="password" id="confirm-password" name="confirm_password" placeholder="Confirm Your New Password" required>
                 </div>
 
                 <button type="submit" class="btn-reset">Reset Password</button>
 
                 <div class="login-link">
-                    Already have an account ? <a href="#">Login here</a>
+                    Already have an account? <a href="#">Login here</a>
                 </div>
             </form>
         </div>
