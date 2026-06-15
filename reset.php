@@ -1,30 +1,38 @@
 <?php
 session_start();
 
+// untuk connectkan php dengan databse
 $conn = mysqli_connect("localhost:3307", "root", "", "wedding_db");
 
+// nak tgk connection ke database tu jadi ke tak
 if (!$conn) {
     die("Database Connection Failed: " . mysqli_connect_error());
 }
 
+// utk pastikan takkeluar tulisan pelik pelik
+mysqli_set_charset($conn, "utf8mb4");
+
+// utk message
 $message = "";
-$message_color = "red";
+$message_color = "red"; 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
+    // ni ambik dari form
+    $email = mysqli_real_escape_string($conn, $_POST['email']); 
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
 
-    if (!isset($_SESSION['user_id'])) {
-        $message = "Please Log In First!";
+    // utk tgk mana mana input yg kosong
+    if (empty($email) || empty($new_password) || empty($confirm_password)) {
+        $message = "All fields are required!";
     }
+    // utk tgk password tu sama ke tak
     else if ($new_password !== $confirm_password) {
         $message = "Passwords do not match!";
     }
     else {
-        $user_id = $_SESSION['user_id'];
-        $role = $_SESSION['user_role'];
-
+        // utk tgk passwrd tu at least ke ada 6 char, 1 upper case, 1 lowercase, 1 symbol
         if (strlen($new_password) < 6) {
             $message = "Password must be at least 6 characters!";
         }
@@ -38,29 +46,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $message = "Password must contain at least 1 symbol!";
         }
         else {
+            // utk tgk user dalam database berdasrkan email
             $table_name = "";
-            if ($role == 'customer') {
-                $table_name = "customer";
-            }
-            else if ($role == 'venue_owner') {
+            
+            // tgk dalam table client
+            $check_client = mysqli_query($conn, "SELECT id FROM client WHERE email = '$email'");
+            // tgk dalam table venue owner
+            $check_owner = mysqli_query($conn, "SELECT id FROM venue_owner WHERE email = '$email'");
+            // tgk dalam table admin
+            $check_admin = mysqli_query($conn, "SELECT id FROM admin WHERE email = '$email'");
+
+            // utk tgk email dalam 3 table and tentukan dia belong dekat table mana
+            if (mysqli_num_rows($check_client) > 0) {
+                $table_name = "client"; 
+            } else if (mysqli_num_rows($check_owner) > 0) {
                 $table_name = "venue_owner";
-            }
-            else if ($role == 'admin') {
+            } else if (mysqli_num_rows($check_admin) > 0) {
                 $table_name = "admin";
             }
 
+            // kalau user tu ada, password baru akan tukar jadi encrypted hash sebelum disimpan
             if ($table_name != "") {
-                
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-                $query = "UPDATE $table_name SET password = ? WHERE id = ?";
+                //siapkan arahan ytk update password ikut email tapi tak jalan lagi
+                $query = "UPDATE $table_name SET password = ? WHERE email = ?";
                 $stmt = mysqli_prepare($conn, $query);
 
+                //mskkan password baru yang dah dihashkan and email user ke dalam query update yang dah prepare
                 if ($stmt) {
-                    mysqli_stmt_bind_param($stmt, "si", $hashed_password, $user_id);
+                    mysqli_stmt_bind_param($stmt, "ss", $hashed_password, $email);
                     
+                    // utk message kalau dah updte password
                     if (mysqli_stmt_execute($stmt)) {
-                        $message = "Password updated successfully for " . strtoupper($role) . " account!";
+                        $message = "Password has been reset successfully for " . strtoupper($table_name) . "!";
                         $message_color = "green";
                     } else {
                         $message = "Failed to update password: " . mysqli_stmt_error($stmt);
@@ -71,7 +90,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
             else {
-                $message = "Invalid user role!";
+                // ni kalau email tu takde dalam databse
+                $message = "Email address not found in our system!";
             }
         }
     }
@@ -92,114 +112,115 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     box-sizing: border-box;
 }
 
-body {
-    font-family: 'Georgia', Times, serif;
-    background: linear-gradient(135deg, #710349 0%, #4a022f 100%);
-    min-height: 100vh;
+body 
+{
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
+    height: 100vh; 
     width: 100vw;
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Ditukar kepada column supaya mesej ralat/berjaya berada di atas dengan kemas */
+    align-items: center; 
     justify-content: center;
+    overflow: hidden; 
     padding: 20px;
 }
 
 .container {
     text-align: center;
     width: 100%;
-    max-width: 500px;
+    max-width: 580px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .logo-container {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     width: 100%;
+    animation: fadeInDown 0.8s ease-out;
 }
 
 .logo {
     width: 100%;
-    max-width: 260px;
+    max-width: 220px; 
     height: auto;
     display: block;
     margin: 0 auto;
+    filter: drop-shadow(0px 4px 8px #61033f);
 }
 
 .title {
-    color: white;
-    font-size: 26px;
-    margin: 5px 0 25px 0;
-    font-weight: 300;
-    letter-spacing: 1.5px;
+    color: #ffffff;
+    font-size: 26px; 
+    margin: 5px 0 25px 0; 
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-shadow: 0 2px 10px #2b0019;
+    animation: fadeInDown 0.8s ease-out;
 }
 
 .form-card {
-    background-color: #ffffff;
-    border-radius: 16px;
-    padding: 40px 35px;
-    text-align: left;
-    box-shadow: 0px 15px 35px #330121;
+    background-color: #DCDCDC; 
+    border: 1px solid #DCDCDC; 
+    border-radius: 24px; 
+    padding: 35px 45px; 
+    text-align: left; 
     width: 100%;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .instruction {
-    color: #666;
+    color: #666666; 
     font-size: 15px;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     font-weight: normal;
 }
 
-.alert-message {
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    margin-bottom: 20px;
-    text-align: center;
-    font-weight: 500;
-}
-.alert-red {
-    background-color: #fde8e8;
-    color: #e53e3e;
-    border: 1px solid #f8b4b4;
-}
-.alert-green {
-    background-color: #def7ec;
-    color: #03543f;
-    border: 1px solid #84e1bc;
-}
-
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 18px;
 }
 
 .form-group label {
     display: block;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 8px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
+    font-size: 13.5px; 
+    color: #2c2c2c;
+    margin-bottom: 4px; 
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+.password-hint {
+    font-size: 11px;
+    color: #710349;
+    margin-bottom: 6px;
+    display: block;
+    font-style: italic;
 }
 
 .form-group input {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 15px;
-    color: #333;
-    background-color: #f9f9f9;
-    transition: all 0.3s ease;
+    padding: 13px 16px; 
+    border: 1.5px solid #e2e8f0; 
+    border-radius: 10px; 
+    font-size: 14.5px; 
+    color: #1a1a1a;
+    background-color: #f8fafc; 
+    outline: none;
+    font-family: inherit;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .form-group input:focus {
-    outline: none;
     border-color: #710349;
-    background-color: #fff;
-    box-shadow: 0 0 0 3px #f1e6ed;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px #f1e6ed; 
 }
 
 .form-group input::placeholder {
-    color: #b3b3b3;
-    font-size: 14px;
+    color: #94a3b8;
+    font-size: 13.5px;
 }
 
 .btn-reset {
@@ -207,31 +228,34 @@ body {
     background-color: #710349;
     color: white;
     border: none;
-    border-radius: 8px;
-    padding: 14px;
-    font-size: 16px;
-    font-family: 'Georgia', serif;
+    border-radius: 10px; 
+    padding: 14px; 
+    font-size: 15px;
     cursor: pointer;
     text-transform: uppercase;
-    margin-top: 15px;
-    margin-bottom: 20px;
-    letter-spacing: 1.5px;
+    margin-top: 10px;
+    margin-bottom: 18px; 
+    letter-spacing: 2px;
     font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.1s ease;
+    box-shadow: 0 4px 12px #ceb3c5;
+    transition: all 0.2s ease;
 }
 
 .btn-reset:hover {
     background-color: #540236;
+    box-shadow: #c69fb7 0px 6px 20px;
+    transform: translateY(-1px);
 }
 
 .btn-reset:active {
-    transform: scale(0.98);
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px #c69fb7;
 }
 
 .login-link {
     text-align: center;
-    font-size: 14px;
-    color: #666;
+    font-size: 13.5px;
+    color: #64748b;
 }
 
 .login-link a {
@@ -242,13 +266,41 @@ body {
 }
 
 .login-link a:hover {
-    color: #4a022f;
+    color: #4a002a;
     text-decoration: underline;
+}
+
+.alert-message {
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    max-width: 580px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
 </head>
 <body>
+
+    <?php if (!empty($message)): ?>
+        <div class="alert-message" style="color: <?php echo $message_color; ?>; background-color: <?php echo $message_color == 'green' ? '#e6f4ea' : '#fce8e6'; ?>;">
+            <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="container">
         <div class="logo-container">
             <img src="wedding_logo.png" alt="Wedding Logo" class="logo">
@@ -257,29 +309,47 @@ body {
         <h2 class="title">Reset Password</h2>
 
         <div class="form-card">
-            <p class="instruction">Please type something you will remember.</p>
-
-            <?php if ($message != ""): ?>
-                <div class="alert-message alert-<?php echo $message_color; ?>">
-                    <?php echo $message; ?>
-                </div>
-            <?php endif; ?>
+            <p class="instruction">Please enter your email and choose a new password.</p>
 
             <form action="" method="POST">
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your registered email" 
+                        required>
+                </div>
+
                 <div class="form-group">
                     <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" name="new_password" placeholder="Enter New Password" required>
+                    <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
+                    <input 
+                        type="password" 
+                        id="new-password" 
+                        name="new_password" 
+                        placeholder="Enter New Password" 
+                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$"
+                        title="Password must be at least 6 characters long and include at least one uppercase letter, one lowercase letter, and one symbol."
+                        required>
                 </div>
 
                 <div class="form-group">
                     <label for="confirm-password">Confirm New Password</label>
-                    <input type="password" id="confirm-password" name="confirm_password" placeholder="Confirm Your New Password" required>
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        name="confirm_password" 
+                        placeholder="Confirm Your New Password" 
+                        required>
                 </div>
 
                 <button type="submit" class="btn-reset">Reset Password</button>
 
                 <div class="login-link">
-                    Already have an account? <a href="#">Login here</a>
+                    Already have an account? <a href="login.html">Login here</a>
                 </div>
             </form>
         </div>
