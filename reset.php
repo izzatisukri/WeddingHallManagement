@@ -1,10 +1,10 @@
 <?php
 session_start();
 
-// untuk connectkan php dengan databse
+// utk connectkan database dengan php
 $conn = mysqli_connect("localhost:3307", "root", "", "wedding_db");
 
-// nak tgk connection ke database tu jadi ke tak
+//utk tgk kalau database tu berjaya ke tak
 if (!$conn) {
     die("Database Connection Failed: " . mysqli_connect_error());
 }
@@ -12,27 +12,27 @@ if (!$conn) {
 // utk pastikan takkeluar tulisan pelik pelik
 mysqli_set_charset($conn, "utf8mb4");
 
-// utk message
+//utk message
 $message = "";
 $message_color = "red"; 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    // ni ambik dari form
+    // ambik dari form lepastu dibersihkn email supaya selamat
     $email = mysqli_real_escape_string($conn, $_POST['email']); 
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];
 
-    // utk tgk mana mana input yg kosong
+    // setiap form tu kena wajib isi
     if (empty($email) || empty($new_password) || empty($confirm_password)) {
         $message = "All fields are required!";
     }
-    // utk tgk password tu sama ke tak
+    //nk tgk password tu match ke tak
     else if ($new_password !== $confirm_password) {
         $message = "Passwords do not match!";
     }
     else {
-        // utk tgk passwrd tu at least ke ada 6 char, 1 upper case, 1 lowercase, 1 symbol
+        // utk pastikan pwd tu at least 6 char, 1 UC, 1 LC, 1 simbol
         if (strlen($new_password) < 6) {
             $message = "Password must be at least 6 characters!";
         }
@@ -45,41 +45,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         else if (!preg_match('/[\W_]/', $new_password)) {
             $message = "Password must contain at least 1 symbol!";
         }
+        //kalau user tak jumpa lagi, sistem kosongkan dulu semua info table and  column
         else {
-            // utk tgk user dalam database berdasrkan email
             $table_name = "";
+            $pwd_column = "";
+            $email_column = "";
             
-            // tgk dalam table client
-            $check_client = mysqli_query($conn, "SELECT id FROM client WHERE email = '$email'");
-            // tgk dalam table venue owner
-            $check_owner = mysqli_query($conn, "SELECT id FROM venue_owner WHERE email = '$email'");
-            // tgk dalam table admin
-            $check_admin = mysqli_query($conn, "SELECT id FROM admin WHERE email = '$email'");
+            // utk check email wyjud dalam table yg mana satu
+            $check_client = mysqli_query($conn, "SELECT client_id FROM client WHERE client_email = '$email'");
+            $check_owner = mysqli_query($conn, "SELECT owner_id FROM venue_owner WHERE owner_email = '$email'");
+            $check_admin = mysqli_query($conn, "SELECT admin_id FROM admin WHERE admin_email = '$email'");
 
-            // utk tgk email dalam 3 table and tentukan dia belong dekat table mana
+            //kalau user ni client simpan dalam table client
             if (mysqli_num_rows($check_client) > 0) {
                 $table_name = "client"; 
+                $pwd_column = "client_password";
+                $email_column = "client_email";
+            //kalau user ni owner simpan dalam table owner
             } else if (mysqli_num_rows($check_owner) > 0) {
                 $table_name = "venue_owner";
+                $pwd_column = "owner_password";
+                $email_column = "owner_email";
+            //kalau user ni admin simpan dalam table admin
             } else if (mysqli_num_rows($check_admin) > 0) {
                 $table_name = "admin";
+                $pwd_column = "admin_password";
+                $email_column = "admin_email";
             }
 
-            // kalau user tu ada, password baru akan tukar jadi encrypted hash sebelum disimpan
+            // klau user wujud, password baru akan diencrypt dulu sebelum disimpan
             if ($table_name != "") {
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-                //siapkan arahan ytk update password ikut email tapi tak jalan lagi
-                $query = "UPDATE $table_name SET password = ? WHERE email = ?";
+                // system nk update password dlm table betul mengikut emial, tapi tak isi data lagi
+                $query = "UPDATE $table_name SET $pwd_column = ? WHERE $email_column = ?";
                 $stmt = mysqli_prepare($conn, $query);
 
-                //mskkan password baru yang dah dihashkan and email user ke dalam query update yang dah prepare
+                //isi password baru yang dah dihash and email user ke dalam query update yang dah disediakan 
                 if ($stmt) {
                     mysqli_stmt_bind_param($stmt, "ss", $hashed_password, $email);
                     
-                    // utk message kalau dah updte password
+                    //utkmessage update password ttu berjaya ke tak
                     if (mysqli_stmt_execute($stmt)) {
-                        $message = "Password has been reset successfully for " . strtoupper($table_name) . "!";
+                        $message = "Password has been reset successfully for " . strtoupper(str_replace('_', ' ', $table_name)) . "!";
                         $message_color = "green";
                     } else {
                         $message = "Failed to update password: " . mysqli_stmt_error($stmt);
@@ -89,8 +97,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $message = "Database query error.";
                 }
             }
+            //kalau email takde akan keluar error message
             else {
-                // ni kalau email tu takde dalam databse
                 $message = "Email address not found in our system!";
             }
         }
@@ -119,7 +127,7 @@ body
     height: 100vh; 
     width: 100vw;
     display: flex;
-    flex-direction: column; /* Ditukar kepada column supaya mesej ralat/berjaya berada di atas dengan kemas */
+    flex-direction: column; 
     align-items: center; 
     justify-content: center;
     overflow: hidden; 
