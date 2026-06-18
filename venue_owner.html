@@ -30,9 +30,9 @@ body {
     padding: 24px 5%;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px; 
+    flex-direction: column; /* Menyusun ke bawah */
+    align-items: center;    /* Meletakkan di tengah-tengah */
+    gap: 16px;              /* Jarak antara tajuk dan menu navigasi */
 }
 
 .logo-area {
@@ -502,13 +502,12 @@ td:last-child {
             </thead>
             <tbody>
                 <tr>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>Teluk Mas</td>
+                    <td>Dewan Serbaguna Telok Mas</td>
+                    <td>Telok Mas</td>
                     <td>700</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-                    </td>
+                        </td>
                 </tr>
                 <tr>
                     <td>Dahlia Wedding Hall</td>
@@ -516,8 +515,7 @@ td:last-child {
                     <td>1,000</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-                    </td>
+                        </td>
                 </tr>
             </tbody>
         </table>
@@ -540,14 +538,13 @@ td:last-child {
             </thead>
             <tbody>
                 <tr>
-                    <td>Dewan Serbaguna Teluk Mas</td>
+                    <td>Dewan Serbaguna Telok Mas</td>
                     <td>Basic Package</td>
                     <td>12,000</td>
                     <td>Nasi, ayam, daging, sayur, buah, air</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
-                    </td>
+                        </td>
                 </tr>
                 <tr>
                     <td>Dahlia Wedding Hall</td>
@@ -556,8 +553,7 @@ td:last-child {
                     <td>Basic + udang, kuih, sate</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
-                    </td>
+                        </td>
                 </tr>
             </tbody>
         </table>
@@ -581,8 +577,8 @@ td:last-child {
             <tbody>
                 <tr>
                     <td>Mariah binti Ali</td>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>2025-10-16</td>
+                    <td>Dewan Serbaguna Telok Mas</td>
+                    <td>2026-10-16</td>
                     <td>Basic Package</td>
                     <td>500</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
@@ -590,7 +586,7 @@ td:last-child {
                 <tr>
                     <td>Aina binti Malik</td>
                     <td>Dahlia Wedding Hall</td>
-                    <td>2025-08-09</td>
+                    <td>2026-11-09</td>
                     <td>Silver Package</td>
                     <td>800</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
@@ -612,7 +608,7 @@ td:last-child {
             </div>
             <div class="form-group">
                 <label>Location Area</label>
-                <input type="text" id="v-area" placeholder="e.g., Teluk Mas, Alor Gajah" required>
+                <input type="text" id="v-area" placeholder="e.g., Telok Mas, Alor Gajah" required>
             </div>
             <div class="form-group">
                 <label>Full Address</label>
@@ -640,11 +636,11 @@ td:last-child {
         <form>
             <div class="form-group">
                 <label>Venue Name</label>
-                <input type="text" value="Dewan Serbaguna Teluk Mas">
+                <input type="text" value="Dewan Serbaguna Telok Mas">
             </div>
             <div class="form-group">
                 <label>Location Area</label>
-                <input type="text" value="Teluk Mas">
+                <input type="text" value="Telok Mas">
             </div>
             <div class="form-group">
                 <label>Full Address</label>
@@ -674,7 +670,7 @@ td:last-child {
                 <label>Select Venue</label>
                 <select id="p-venue" required>
                     <option value="" disabled selected>Choose venue</option>
-                    <option value="Dewan Serbaguna Teluk Mas">Dewan Serbaguna Teluk Mas</option>
+                    <option value="Dewan Serbaguna Telok Mas">Dewan Serbaguna Telok Mas</option>
                     <option value="Dahlia Wedding Hall">Dahlia Wedding Hall</option>
                 </select>
             </div>
@@ -705,7 +701,7 @@ td:last-child {
             <div class="form-group">
                 <label>Select Venue</label>
                 <select>
-                    <option selected>Dewan Serbaguna Teluk Mas</option>
+                    <option selected>Dewan Serbaguna Telok Mas</option>
                     <option>Dahlia Wedding Hall</option>
                 </select>
             </div>
@@ -750,16 +746,33 @@ td:last-child {
 </div>
 
 <script>
-
-    // untuk save data yg nk di delete dulu sebelum kene padam
     let rowToDelete = null; 
 
-    // untuk bagi dia automatic bila page dah siap load
     window.onload = function() {
         updateStats();
+        setupDateRestrictions(); // DIUBAH: Memanggil tetapan sekatan tarikh 3 bulan semasa halaman dimuatkan
     };
 
-    //untuk tukar tabe setiap page
+    // TAMBAHAN BARU: Fungsi untuk menetapkan had minimum kalendar (3 bulan dari tarikh hari ini)
+    function setupDateRestrictions() {
+        const today = new Date();
+        // Menambah 3 bulan dari hari ini
+        today.setMonth(today.getMonth() + 3);
+        
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        
+        // Format tarikh ke YYYY-MM-DD yang diterima oleh atribut 'min' pada input jenis date
+        const minDateString = `${year}-${month}-${day}`;
+        
+        // Melakukan carian pada semua elemen input jenis 'date' (jika ada pada panel owner/customer akan datang)
+        const dateInputs = document.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.setAttribute('min', minDateString);
+        });
+    }
+
     function switchTab(tabName) {
         const sections = document.querySelectorAll('.content-section');
         sections.forEach(section => section.classList.remove('active-section'));
@@ -771,7 +784,6 @@ td:last-child {
         document.getElementById('tab-' + tabName).classList.add('active');
     }
 
-    //untuk confirmation bila tekan button delete
     function openModal(modalId, type = '', buttonElement = null) {
         document.getElementById(modalId).style.display = 'flex';
         
@@ -790,17 +802,14 @@ td:last-child {
         }
     }
 
-    // untuk ttp popup window
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
     }
 
-    //untuk logout, lepastu akan terus ke login page
     function executeLogout() {
         window.location.href = 'login.html'; 
     }
 
-    //ambik data yg diisi dalam form "add new venue" and utk check form supaya semua field tu diissi 
     function addNewVenue() {
         const name = document.getElementById('v-name').value;
         const area = document.getElementById('v-area').value;
@@ -811,7 +820,6 @@ td:last-child {
             return;
         }
 
-        // utk tmbh venue baru dalam table, dropdown, etc lepastu bagi mesaage
         const tbody = document.querySelector('#table-venues tbody');
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
@@ -820,8 +828,7 @@ td:last-child {
             <td>${capacity}</td>
             <td>
                 <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-            </td>
+                </td>
         `;
         
         tbody.appendChild(newRow); 
@@ -837,7 +844,6 @@ td:last-child {
         submitForm('modal-add-venue', 'Venue Added Successfully!');
     }
 
-    //ambik data yg diisi dalam form "add new package" and utk check form supaya semua field tu diisi 
     function addNewPackage() {
         const venue = document.getElementById('p-venue').value;
         const name = document.getElementById('p-name').value;
@@ -849,7 +855,6 @@ td:last-child {
             return;
         }
 
-    // untuk tambah package baru dalam table, etc lepastu bagi mesaage
         const tbody = document.querySelector('#table-packages tbody');
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
@@ -859,8 +864,7 @@ td:last-child {
             <td>${inclusions ? inclusions : '-'}</td>
             <td>
                 <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
-            </td>
+                </td>
         `;
         
         tbody.appendChild(newRow);
@@ -870,13 +874,11 @@ td:last-child {
         submitForm('modal-add-package', 'Package Added Successfully!');
     }
 
-    //untuk tutup popup window and tunjuk message berjaya
     function submitForm(modalId, message) {
         closeModal(modalId);
         triggerToast(message);
     }
 
-    // untuk delete data yg kena pilih lepastu show message berjaya
     function confirmDelete(message) {
         if (rowToDelete) {
             rowToDelete.remove(); 
@@ -887,7 +889,6 @@ td:last-child {
         triggerToast(message);
     }
 
-    // utk kira semua data dan update jum. dalam main page
     function updateStats() {
         const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
         const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
@@ -898,7 +899,6 @@ td:last-child {
         document.getElementById('count-confirmed').textContent = totalBookings + " Confirmed Bookings";
     }
 
-    //untuk toast notification
     function triggerToast(message) {
         const toast = document.getElementById('toast-global');
         if (toast) {
@@ -911,7 +911,6 @@ td:last-child {
         }
     }
 
-    // untuk tutup popup window bila click bahagian luar popup
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
