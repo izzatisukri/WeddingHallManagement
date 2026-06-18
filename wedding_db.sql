@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Jun 07, 2026 at 04:10 PM
+-- Generation Time: Jun 12, 2026 at 06:36 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -75,8 +75,7 @@ CREATE TABLE `package` (
   `package_id` int(11) NOT NULL,
   `package_name` varchar(100) NOT NULL,
   `description` text NOT NULL,
-  `package_price` decimal(10,2) NOT NULL,
-  `venue_id` int(11) NOT NULL
+  `package_price` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -138,8 +137,7 @@ ALTER TABLE `client`
 -- Indexes for table `package`
 --
 ALTER TABLE `package`
-  ADD PRIMARY KEY (`package_id`),
-  ADD KEY `venue_id` (`venue_id`);
+  ADD PRIMARY KEY (`package_id`);
 
 --
 -- Indexes for table `venue`
@@ -205,12 +203,6 @@ ALTER TABLE `booking`
   ADD CONSTRAINT `booking_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
   ADD CONSTRAINT `booking_ibfk_2` FOREIGN KEY (`package_id`) REFERENCES `package` (`package_id`),
   ADD CONSTRAINT `booking_ibfk_3` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
-
---
--- Constraints for table `package`
---
-ALTER TABLE `package`
-  ADD CONSTRAINT `package_ibfk_1` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
 
 --
 -- Constraints for table `venue`
