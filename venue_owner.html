@@ -30,9 +30,9 @@ body {
     padding: 24px 5%;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
-    flex-direction: column; /* Menyusun ke bawah */
-    align-items: center;    /* Meletakkan di tengah-tengah */
-    gap: 16px;              /* Jarak antara tajuk dan menu navigasi */
+    flex-direction: column;
+    align-items: center; 
+    gap: 16px;              
 }
 
 .logo-area {
@@ -750,23 +750,19 @@ td:last-child {
 
     window.onload = function() {
         updateStats();
-        setupDateRestrictions(); // DIUBAH: Memanggil tetapan sekatan tarikh 3 bulan semasa halaman dimuatkan
+        setupDateRestrictions();
     };
 
-    // TAMBAHAN BARU: Fungsi untuk menetapkan had minimum kalendar (3 bulan dari tarikh hari ini)
     function setupDateRestrictions() {
         const today = new Date();
-        // Menambah 3 bulan dari hari ini
         today.setMonth(today.getMonth() + 3);
         
         const year = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
         
-        // Format tarikh ke YYYY-MM-DD yang diterima oleh atribut 'min' pada input jenis date
         const minDateString = `${year}-${month}-${day}`;
         
-        // Melakukan carian pada semua elemen input jenis 'date' (jika ada pada panel owner/customer akan datang)
         const dateInputs = document.querySelectorAll('input[type="date"]');
         dateInputs.forEach(input => {
             input.setAttribute('min', minDateString);
