@@ -1,3 +1,169 @@
+<?php
+session_start();
+
+// utk check if user tu dah login as onwer ke tak
+if (!isset($_SESSION['owner_id'])) {
+    header("Location: login.html");
+    exit();
+}
+
+// amik data dari login
+$owner_id = $_SESSION['owner_id'];
+$owner_name = isset($_SESSION['owner_name']) ? $_SESSION['owner_name'] : "Venue Owner";
+
+// utk connectkan database dengan php
+$conn = mysqli_connect("localhost:3307", "root", "", "wedding_db");
+
+//kalau tak keluar error
+if (!$conn) {
+    die("Database Connection Failed: " . mysqli_connect_error());
+}
+
+// utk pastikan tak keluar any tulisan pelik
+mysqli_set_charset($conn, "utf8mb4");
+
+// utk message and status kalau berjaya
+$message = "";
+$status = "success";
+
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
+    
+    // utk check kalau user tekan add venue, lepastu ambik semua data venue dari form
+    if ($_POST['action'] == 'add_venue') {
+        $v_name = mysqli_real_escape_string($conn, $_POST['v_name']);
+        $v_area = mysqli_real_escape_string($conn, $_POST['v_area']);
+        $v_address = mysqli_real_escape_string($conn, $_POST['v_address']);
+        $v_capacity = intval($_POST['v_capacity']);
+        $v_desc = mysqli_real_escape_string($conn, $_POST['v_desc']);
+
+        //untuk masukkan data venue baru ke dalam database
+        $query = "INSERT INTO venue (venue_name, venue_area, venue_address, venue_capacity, venue_description, owner_id) VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = mysqli_prepare($conn, $query);
+
+        //utk isi data venue dalam database lepastu jalankan query, then check berjaya ke tak
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "sssisi", $v_name, $v_area, $v_address, $v_capacity, $v_desc, $owner_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $message = "Venue Added Successfully!";
+            } else {
+                $message = "Error adding venue: " . mysqli_error($conn);
+                $status = "error";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    // utk check kalau user tekan add package, lepastu ambik semua data package dari form
+    if ($_POST['action'] == 'add_package') {
+        $venue_id = intval($_POST['p_venue_id']);
+        $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
+        $p_price = floatval(str_replace(',', '', $_POST['p_price']));
+        $p_inclusions = mysqli_real_escape_string($conn, $_POST['p_inclusions']);
+
+        //untuk masukkan data venue baru ke dalam database
+        $query = "INSERT INTO package (venue_id, package_name, package_price, package_inclusion) VALUES (?, ?, ?, ?)";
+        $stmt = mysqli_prepare($conn, $query);
+
+        //utk isi data package dalam database lepastu jalankan query, then check berjaya ke tak
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "isds", $venue_id, $p_name, $p_price, $p_inclusions);
+            if (mysqli_stmt_execute($stmt)) {
+                $message = "Package Added Successfully!";
+            } else {
+                $message = "Error adding package: " . mysqli_error($conn);
+                $status = "error";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    // utk check kalau user nak padam venue, pastu ambik id venue yang nak dipadam
+    if ($_POST['action'] == 'delete_venue') {
+        $id_to_delete = intval($_POST['delete_id']);
+
+        // utk pastikan venue tu betul-betul milik owner yang sdg active
+        $query = "DELETE FROM venue WHERE venue_id = ? AND owner_id = ?";
+        $stmt = mysqli_prepare($conn, $query);
+
+        //utk padam venue yang dipilih, lepastu check berjaya atau tak, paparkan mesej
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "ii", $id_to_delete, $owner_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $message = "Venue Deleted Successfully!";
+            } else {
+                $message = "Error deleting venue.";
+                $status = "error";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+
+    // utk check kalau user nak padam package, lepastu ambil id package yang nak dipadam
+    if ($_POST['action'] == 'delete_package') {
+        $id_to_delete = intval($_POST['delete_id']);
+        
+        // utk pastikan venue tu betul-betul milik owner yang sdg active
+        $query = "DELETE FROM package WHERE package_id = ? AND venue_id IN (SELECT venue_id FROM venue WHERE owner_id = ?)";
+        $stmt = mysqli_prepare($conn, $query);
+
+        // utk padam package yang dipilih, lepastu check berjaya atau tak, paparkan mesej
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "ii", $id_to_delete, $owner_id);
+            if (mysqli_stmt_execute($stmt)) {
+                $message = "Package Deleted Successfully!";
+            } else {
+                $message = "Error deleting package.";
+                $status = "error";
+            }
+            mysqli_stmt_close($stmt);
+        }
+    }
+}
+
+//Sistem ambil semua venue milik owner and sediakan senarai kosong untuk simpan data 
+$venues_result = mysqli_query($conn, "SELECT * FROM venue WHERE owner_id = $owner_id");
+$venues_list = [];
+
+// system ambik semua venue satu-satu dari database dan simpan dalam array
+while ($row = mysqli_fetch_assoc($venues_result)) {
+    $venues_list[] = $row;
+}
+
+// ambil semua package yang milik venue owner, sekali dengan nama venue
+$packages_query = "SELECT p.*, v.venue_name FROM package p 
+                   JOIN venue v ON p.venue_id = v.venue_id 
+                   WHERE v.owner_id = $owner_id";
+$packages_result = mysqli_query($conn, $packages_query);
+
+// ambil senarai booking untuk owner, gabungkan sekali venue, package dan client
+$bookings_query = "SELECT b.*, v.venue_name, p.package_name, c.client_name 
+                   FROM booking b
+                   JOIN venue v ON b.venue_id = v.venue_id
+                   JOIN package p ON b.package_id = p.package_id
+                   JOIN client c ON b.client_id = c.client_id
+                   WHERE v.owner_id = $owner_id";
+$bookings_result = mysqli_query($conn, $bookings_query);
+
+// kira jumlah venue dan package untuk owner
+$count_venues = count($venues_list);
+$count_packages = mysqli_num_rows($packages_result);
+
+//set awal kiraan booking kepada kosong
+$count_pending = 0;
+$count_confirmed = 0;
+
+//kira berapa booking yang pending dan berapa yang confirmed
+if ($bookings_result) {
+    while ($b_row = mysqli_fetch_assoc($bookings_result)) {
+        if (strtolower($b_row['booking_status']) == 'pending') $count_pending++;
+        if (strtolower($b_row['booking_status']) == 'confirmed') $count_confirmed++;
+    }
+    // reset balik pointer dalam result booking balik ke 1st line
+    mysqli_data_seek($bookings_result, 0);
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,8 +197,8 @@ body {
     border-bottom: 1px solid #e2e8f0;
     display: flex;
     flex-direction: column;
-    align-items: center; 
-    gap: 16px;              
+    align-items: center;
+    gap: 16px; 
 }
 
 .logo-area {
@@ -502,12 +668,13 @@ td:last-child {
             </thead>
             <tbody>
                 <tr>
-                    <td>Dewan Serbaguna Telok Mas</td>
-                    <td>Telok Mas</td>
+                    <td>Dewan Serbaguna Teluk Mas</td>
+                    <td>Teluk Mas</td>
                     <td>700</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        </td>
+                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
+                    </td>
                 </tr>
                 <tr>
                     <td>Dahlia Wedding Hall</td>
@@ -515,7 +682,8 @@ td:last-child {
                     <td>1,000</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        </td>
+                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -538,13 +706,14 @@ td:last-child {
             </thead>
             <tbody>
                 <tr>
-                    <td>Dewan Serbaguna Telok Mas</td>
+                    <td>Dewan Serbaguna Teluk Mas</td>
                     <td>Basic Package</td>
                     <td>12,000</td>
                     <td>Nasi, ayam, daging, sayur, buah, air</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        </td>
+                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
+                    </td>
                 </tr>
                 <tr>
                     <td>Dahlia Wedding Hall</td>
@@ -553,7 +722,8 @@ td:last-child {
                     <td>Basic + udang, kuih, sate</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        </td>
+                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -577,8 +747,8 @@ td:last-child {
             <tbody>
                 <tr>
                     <td>Mariah binti Ali</td>
-                    <td>Dewan Serbaguna Telok Mas</td>
-                    <td>2026-10-16</td>
+                    <td>Dewan Serbaguna Teluk Mas</td>
+                    <td>2025-10-16</td>
                     <td>Basic Package</td>
                     <td>500</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
@@ -586,7 +756,7 @@ td:last-child {
                 <tr>
                     <td>Aina binti Malik</td>
                     <td>Dahlia Wedding Hall</td>
-                    <td>2026-11-09</td>
+                    <td>2025-08-09</td>
                     <td>Silver Package</td>
                     <td>800</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
@@ -608,7 +778,7 @@ td:last-child {
             </div>
             <div class="form-group">
                 <label>Location Area</label>
-                <input type="text" id="v-area" placeholder="e.g., Telok Mas, Alor Gajah" required>
+                <input type="text" id="v-area" placeholder="e.g., Teluk Mas, Alor Gajah" required>
             </div>
             <div class="form-group">
                 <label>Full Address</label>
@@ -636,11 +806,11 @@ td:last-child {
         <form>
             <div class="form-group">
                 <label>Venue Name</label>
-                <input type="text" value="Dewan Serbaguna Telok Mas">
+                <input type="text" value="Dewan Serbaguna Teluk Mas">
             </div>
             <div class="form-group">
                 <label>Location Area</label>
-                <input type="text" value="Telok Mas">
+                <input type="text" value="Teluk Mas">
             </div>
             <div class="form-group">
                 <label>Full Address</label>
@@ -670,7 +840,7 @@ td:last-child {
                 <label>Select Venue</label>
                 <select id="p-venue" required>
                     <option value="" disabled selected>Choose venue</option>
-                    <option value="Dewan Serbaguna Telok Mas">Dewan Serbaguna Telok Mas</option>
+                    <option value="Dewan Serbaguna Teluk Mas">Dewan Serbaguna Teluk Mas</option>
                     <option value="Dahlia Wedding Hall">Dahlia Wedding Hall</option>
                 </select>
             </div>
@@ -701,7 +871,7 @@ td:last-child {
             <div class="form-group">
                 <label>Select Venue</label>
                 <select>
-                    <option selected>Dewan Serbaguna Telok Mas</option>
+                    <option selected>Dewan Serbaguna Teluk Mas</option>
                     <option>Dahlia Wedding Hall</option>
                 </select>
             </div>
@@ -746,29 +916,16 @@ td:last-child {
 </div>
 
 <script>
+
+    // untuk save data yg nk di delete dulu sebelum kene padam
     let rowToDelete = null; 
 
+    // untuk bagi dia automatic bila page dah siap load
     window.onload = function() {
         updateStats();
-        setupDateRestrictions();
     };
 
-    function setupDateRestrictions() {
-        const today = new Date();
-        today.setMonth(today.getMonth() + 3);
-        
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        
-        const minDateString = `${year}-${month}-${day}`;
-        
-        const dateInputs = document.querySelectorAll('input[type="date"]');
-        dateInputs.forEach(input => {
-            input.setAttribute('min', minDateString);
-        });
-    }
-
+    //untuk tukar tabe setiap page
     function switchTab(tabName) {
         const sections = document.querySelectorAll('.content-section');
         sections.forEach(section => section.classList.remove('active-section'));
@@ -780,6 +937,7 @@ td:last-child {
         document.getElementById('tab-' + tabName).classList.add('active');
     }
 
+    //untuk confirmation bila tekan button delete
     function openModal(modalId, type = '', buttonElement = null) {
         document.getElementById(modalId).style.display = 'flex';
         
@@ -798,14 +956,17 @@ td:last-child {
         }
     }
 
+    // untuk ttp popup window
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
     }
 
+    //untuk logout, lepastu akan terus ke login page
     function executeLogout() {
         window.location.href = 'login.html'; 
     }
 
+    //ambik data yg diisi dalam form "add new venue" and utk check form supaya semua field tu diissi 
     function addNewVenue() {
         const name = document.getElementById('v-name').value;
         const area = document.getElementById('v-area').value;
@@ -816,6 +977,7 @@ td:last-child {
             return;
         }
 
+        // utk tmbh venue baru dalam table, dropdown, etc lepastu bagi mesaage
         const tbody = document.querySelector('#table-venues tbody');
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
@@ -824,7 +986,8 @@ td:last-child {
             <td>${capacity}</td>
             <td>
                 <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                </td>
+                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
+            </td>
         `;
         
         tbody.appendChild(newRow); 
@@ -840,6 +1003,7 @@ td:last-child {
         submitForm('modal-add-venue', 'Venue Added Successfully!');
     }
 
+    //ambik data yg diisi dalam form "add new package" and utk check form supaya semua field tu diisi 
     function addNewPackage() {
         const venue = document.getElementById('p-venue').value;
         const name = document.getElementById('p-name').value;
@@ -851,6 +1015,7 @@ td:last-child {
             return;
         }
 
+    // untuk tambah package baru dalam table, etc lepastu bagi mesaage
         const tbody = document.querySelector('#table-packages tbody');
         const newRow = document.createElement('tr');
         newRow.innerHTML = `
@@ -860,7 +1025,8 @@ td:last-child {
             <td>${inclusions ? inclusions : '-'}</td>
             <td>
                 <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                </td>
+                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
+            </td>
         `;
         
         tbody.appendChild(newRow);
@@ -870,11 +1036,13 @@ td:last-child {
         submitForm('modal-add-package', 'Package Added Successfully!');
     }
 
+    //untuk tutup popup window and tunjuk message berjaya
     function submitForm(modalId, message) {
         closeModal(modalId);
         triggerToast(message);
     }
 
+    // untuk delete data yg kena pilih lepastu show message berjaya
     function confirmDelete(message) {
         if (rowToDelete) {
             rowToDelete.remove(); 
@@ -885,6 +1053,7 @@ td:last-child {
         triggerToast(message);
     }
 
+    // utk kira semua data dan update jum. dalam main page
     function updateStats() {
         const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
         const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
@@ -895,6 +1064,7 @@ td:last-child {
         document.getElementById('count-confirmed').textContent = totalBookings + " Confirmed Bookings";
     }
 
+    //untuk toast notification
     function triggerToast(message) {
         const toast = document.getElementById('toast-global');
         if (toast) {
@@ -907,11 +1077,20 @@ td:last-child {
         }
     }
 
+    // untuk tutup popup window bila click bahagian luar popup
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
         }
     }
+
+    //unjuk notification bila page dah load, klau ada mesej dari server
+    <?php if(!empty($message)): ?>
+        window.onload = function() {
+            triggerToast("<?php echo $message; ?>", "<?php echo $status == 'error'; ?>");
+        };
+    <?php endif; ?>
+
 </script>
 
 </body>
