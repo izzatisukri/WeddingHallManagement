@@ -633,7 +633,7 @@ td:last-child {
     <div class="header">
         <div class="logo-area">🌸 Wedding Hall Management - Owner Panel</div>
         <div class="nav-links">
-            <a onclick="switchTab('venues')" id="tab-venues" class="active">My Venues</a>
+            <a onclick="switchTab('venues')" id="tab-venues" class="active">Venues</a>
             <a onclick="switchTab('packages')" id="tab-packages">Packages</a>
             <a onclick="switchTab('bookings')" id="tab-bookings">Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
@@ -654,7 +654,7 @@ td:last-child {
 
     <div id="section-venues" class="content-section active-section">
         <div class="section-header">
-            <h3>My Venues</h3>
+            <h3>Venues</h3>
             <button class="btn-add" onclick="openModal('modal-add-venue')">+ Add New Venue</button>
         </div>
         <table id="table-venues">

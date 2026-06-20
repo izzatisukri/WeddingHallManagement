@@ -18,6 +18,10 @@ body {
     color: #2d3748;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
@@ -102,6 +106,7 @@ body {
     opacity: 0.85;
 }
 
+/* Content Section Layout */
 .content-section {
     background-color: #ffffff;
     color: #2d3748;
@@ -298,6 +303,7 @@ td:last-child {
 </style>
 </head>
 <body>
+
 <div class="container">
     <div class="header">
         <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
@@ -328,31 +334,24 @@ td:last-child {
                     <th>Package</th>
                     <th>Guests</th>
                     <th>Status</th>
-                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>Mariah binti Ali</td>
-                    <td>Dewan Serbaguna Teluk Mas</td>
+                    <td>Mariah Binti Ali</td>
+                    <td>Dewan Serbaguna Telok Mas</td>
                     <td>2025-10-16</td>
                     <td>Basic Package</td>
                     <td>500</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
-                    <td>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', this)">Delete</button>
-                    </td>
                 </tr>
                 <tr>
-                    <td>Aina binti Malik</td>
+                    <td>Aina Binti Malik</td>
                     <td>Dahlia Wedding Hall</td>
                     <td>2025-08-09</td>
                     <td>Silver Package</td>
                     <td>800</td>
                     <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
-                    <td>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', this)">Delete</button>
-                    </td>
                 </tr>
             </tbody>
         </table>
@@ -382,11 +381,8 @@ td:last-child {
 </div>
 
 <script>
-
-    // untuk save data yg nk di delete dulu sebelum kene padam
     let rowToDelete = null; 
 
-    // untuk "delete" punya popup
     function openModal(modalId, buttonElement) {
         document.getElementById(modalId).style.display = 'flex';
         
@@ -402,12 +398,10 @@ td:last-child {
         }
     }
 
-    // untuk hide popup
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
     }
 
-    // untuk confirm "delete" punya popup
     function confirmDelete(message) {
         if (rowToDelete) {
             rowToDelete.remove(); 
@@ -417,12 +411,10 @@ td:last-child {
         triggerToast(message);
     }
 
-    // untuk logout, lepastu bila tekan button logout akan terus ke login page balik
     function confirmLogout() {
         window.location.href = 'login.html'; 
     }
 
-    // untuk toast notification
     function triggerToast(message) {
         const toast = document.getElementById('toast-global');
         if (toast) {
@@ -435,7 +427,6 @@ td:last-child {
         }
     }
 
-    // untuk tutup popup window bila click bahagian luar popup
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
