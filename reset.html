@@ -12,8 +12,7 @@
     box-sizing: border-box;
 }
 
-body 
-{
+body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
     height: 100vh; 
@@ -70,22 +69,32 @@ body
 }
 
 .instruction {
-    color: #666666; 
-    font-size: 15px;
+    color: #555555; 
+    font-size: 14.5px;
     text-align: center;
     margin-bottom: 25px;
-    font-weight: normal;
+    font-weight: 500;
+    line-height: 1.4;
 }
 
 .form-group {
     margin-bottom: 18px;
+    transition: all 0.4s ease;
+}
+
+/* Bahagian Password disembunyikan pada mulanya */
+#password-section {
+    display: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.4s ease;
 }
 
 .form-group label {
     display: block;
     font-size: 13.5px; 
     color: #2c2c2c;
-    margin-bottom: 4px; 
+    margin-bottom: 6px; 
     font-weight: bold;
     letter-spacing: 0.3px;
 }
@@ -117,12 +126,7 @@ body
     box-shadow: 0 0 0 4px #f1e6ed; 
 }
 
-.form-group input::placeholder {
-    color: #94a3b8;
-    font-size: 13.5px;
-}
-
-.btn-reset {
+.btn-action {
     width: 100%;
     background-color: #710349;
     color: white;
@@ -140,15 +144,10 @@ body
     transition: all 0.2s ease;
 }
 
-.btn-reset:hover {
+.btn-action:hover {
     background-color: #540236;
     box-shadow: #c69fb7 0px 6px 20px;
     transform: translateY(-1px);
-}
-
-.btn-reset:active {
-    transform: translateY(1px);
-    box-shadow: 0 2px 8px #c69fb7;
 }
 
 .login-link {
@@ -161,25 +160,12 @@ body
     color: #710349;
     text-decoration: none;
     font-weight: bold;
-    transition: color 0.2s ease;
 }
 
 .login-link a:hover {
     color: #4a002a;
     text-decoration: underline;
 }
-
-.alert-message {
-    padding: 12px 20px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    font-weight: bold;
-    text-align: center;
-    width: 100%;
-    max-width: 580px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
 
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-15px); }
@@ -196,34 +182,38 @@ body
 <body>
     <div class="container">
         <div class="logo-container">
-            <img src="wedding_logo.png" alt="Wedding Logo" class="logo">
+            <img src="images/wedding_logo.png" alt="Wedding Logo" class="logo">
         </div>
 
         <h2 class="title">Reset Password</h2>
 
         <div class="form-card">
-            <p class="instruction">Please type something you will remember.</p>
+            <p id="instruction-text" class="instruction">Enter your registered email address to find your account.</p>
 
-            <form action="#" method="POST">
+            <form id="resetForm" action="#" method="POST">
                 
-                <div class="form-group">
-                    <label for="new-password">New Password</label>
-                    <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
-                    <input 
-                        type="password" 
-                        id="new-password" 
-                        placeholder="Enter New Password" 
-                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$"
-                        title="Password must be at least 6 characters long and include at least one uppercase letter, one lowercase letter, and one symbol."
-                        required>
+                <div class="form-group" id="email-section">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="customer@gmail.com" required>
                 </div>
 
-                <div class="form-group">
-                    <label for="confirm-password">Confirm New Password</label>
-                    <input type="password" id="confirm-password" placeholder="Confirm Your New Password" required>
+                <div id="password-section">
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
+                        <input 
+                            type="password" 
+                            id="new-password" 
+                            placeholder="Create a password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" placeholder="Re-enter password">
+                    </div>
                 </div>
 
-                <button type="submit" class="btn-reset">Reset Password</button>
+                <button type="submit" id="submit-btn" class="btn-action">Next</button>
 
                 <div class="login-link">
                     Already have an account? <a href="login.html">Login here</a>
@@ -231,5 +221,54 @@ body
             </form>
         </div>
     </div>
+
+    <script>
+        const resetForm = document.getElementById('resetForm');
+        const emailSection = document.getElementById('email-section');
+        const passwordSection = document.getElementById('password-section');
+        const submitBtn = document.getElementById('submit-btn');
+        const instructionText = document.getElementById('instruction-text');
+        
+        let currentStep = 1;
+
+        resetForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            if (currentStep === 1) {
+                // Sembunyikan bahagian emel & paparkan bahagian password
+                emailSection.style.display = 'none';
+                passwordSection.style.display = 'block';
+                
+                // Tukar teks arahan seperti yang diminta
+                instructionText.innerHTML = '<span style="color: #710349; font-weight: bold;">Account found.</span> Please enter your new password.';
+                
+                // Animasi kelancaran semasa password muncul
+                setTimeout(() => {
+                    passwordSection.style.opacity = '1';
+                    passwordSection.style.transform = 'translateY(0)';
+                }, 50);
+
+                // Tukar input password menjadi wajib isi (required)
+                document.getElementById('new-password').required = true;
+                document.getElementById('confirm-password').required = true;
+
+                // Tukar teks butang utama
+                submitBtn.innerText = 'Reset Password';
+                currentStep = 2;
+
+            } else if (currentStep === 2) {
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+
+                // Semakan padanan kata laluan
+                if (newPassword !== confirmPassword) {
+                    alert('Passwords do not match! Please check again.');
+                } else {
+                    alert('Password has been successfully updated!');
+                    window.location.href = 'login.html'; // Kembali ke login
+                }
+            }
+        });
+    </script>
 </body>
 </html>
