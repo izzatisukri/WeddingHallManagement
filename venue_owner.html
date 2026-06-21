@@ -305,7 +305,8 @@ td:last-child {
 }
 
 .modal-box-add { max-width: 580px; }
-.modal-box-delete { max-width: 440px; text-align: center; }
+.modal-box-delete { max-width: 440px; text-align: center;
+}
 
 .modal-box-logout {
     background-color: #ffffff;
@@ -491,6 +492,7 @@ td:last-child {
     text-align: center;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     animation: fadeIn 0.4s ease-out;
+    position: relative;
 }
 .modal-box-view-image img {
     max-width: 100%;
@@ -500,6 +502,20 @@ td:last-child {
     object-fit: contain;
     margin-bottom: 15px;
 }
+.image-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #710349;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 50%;
+    font-weight: bold;
+}
+.prev-btn { left: 10px; }
+.next-btn { right: 10px; }
 
 .btn-close-image {
     background-color: #710349;
@@ -554,6 +570,7 @@ td:last-child {
                     <th>Venue Name</th>
                     <th>Full Address</th>
                     <th>Capacity</th>
+                    <th>Venue Images</th>
                     <th>SSM Number</th>
                 </tr>
             </thead>
@@ -563,6 +580,7 @@ td:last-child {
                     <td>Dewan Serbaguna Telok Mas</td>
                     <td>No 12, Jalan Hang Tuah, Telok Mas, Melaka</td>
                     <td>700</td>
+                    <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue.jpg', 'images/pelamin.jpg'], 'Dewan Serbaguna Telok Mas')">View</button></td>
                     <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
                 </tr>
                 <tr>
@@ -570,6 +588,7 @@ td:last-child {
                     <td>Dahlia Wedding Hall</td>
                     <td>KM 25, Jalan Simpang Ampat, Alor Gajah, Melaka</td>
                     <td>1,000</td>
+                    <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue1.jpg', 'images/pelamin1.jpg'], 'Dahlia Wedding Hall')">View</button></td>
                     <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
                 </tr>
             </tbody>
@@ -690,8 +709,11 @@ td:last-child {
 
 <div id="modal-view-image" class="modal-overlay">
     <div class="modal-box-view-image">
-        <h3 style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">SSM Certificate View</h3>
-        <img id="ssm-img-placeholder" src="" alt="SSM Certificate">
+        <h3 id="gallery-title" style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">SSM Certificate View</h3>
+        <button class="image-nav-btn prev-btn" onclick="changeImage(-1)">&#10094;</button>
+        <img id="ssm-img-placeholder" src="" alt="Image">
+        <button class="image-nav-btn next-btn" onclick="changeImage(1)">&#10095;</button>
+        <p id="image-counter" style="margin-bottom: 10px; color: #718096;"></p>
         <div class="form-actions" style="justify-content: center; margin-top: 0;">
             <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
         </div>
@@ -820,6 +842,8 @@ td:last-child {
 <script>
     let rowToDelete = null; 
     let rowToEdit = null;
+    let currentGallery = [];
+    let currentIndex = 0;
 
     window.onload = function() {
         const dropdowns = document.querySelectorAll('.select-status');
@@ -860,6 +884,32 @@ td:last-child {
     function openImageModal(imagePath) {
         document.getElementById('ssm-img-placeholder').src = imagePath;
         document.getElementById('modal-view-image').style.display = 'flex';
+        document.getElementById('gallery-title').textContent = 'SSM Certificate View';
+        document.querySelector('.prev-btn').style.display = 'none';
+        document.querySelector('.next-btn').style.display = 'none';
+        document.getElementById('image-counter').textContent = '';
+    }
+
+    function openGalleryModal(images, venueName) {
+        currentGallery = images;
+        currentIndex = 0;
+        document.getElementById('gallery-title').textContent = venueName;
+        updateGalleryImage();
+        document.getElementById('modal-view-image').style.display = 'flex';
+        document.querySelector('.prev-btn').style.display = 'block';
+        document.querySelector('.next-btn').style.display = 'block';
+    }
+
+    function updateGalleryImage() {
+        document.getElementById('ssm-img-placeholder').src = currentGallery[currentIndex];
+        document.getElementById('image-counter').textContent = `(Picture ${currentIndex + 1} of ${currentGallery.length})`;
+    }
+
+    function changeImage(direction) {
+        currentIndex += direction;
+        if (currentIndex < 0) currentIndex = currentGallery.length - 1;
+        if (currentIndex >= currentGallery.length) currentIndex = 0;
+        updateGalleryImage();
     }
 
     function closeModal(modalId) {
@@ -880,7 +930,7 @@ td:last-child {
         const certificateInput = document.getElementById('v-certificate');
         
         if(ownerName === '' || name === '' || capacity === '' || imagesInput.files.length === 0 || ssm === '' || certificateInput.value === '') {
-            alert('Please fill in all required information and upload at least one image!');
+            alert('Please fill in all required information!');
             return;
         }
 
@@ -891,12 +941,12 @@ td:last-child {
             <td>${name}</td>
             <td>${address ? address : '-'}</td>
             <td>${capacity}</td>
+            <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue.jpg', 'images/pelamin.jpg'], '${name}')">View</button></td>
             <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">${ssm}</a></td>
         `;
         tbody.appendChild(newRow); 
         
         const editPVenueSelect = document.getElementById('edit-p-venue');
-        
         const newOption = document.createElement('option');
         newOption.value = name;
         newOption.textContent = name;
@@ -914,7 +964,7 @@ td:last-child {
         const price = document.getElementById('p-price').value;
         const inclusions = document.getElementById('p-inclusions').value;
         if(venue === '' || name === '' || price === '') {
-            alert('Please fill in Venue, Package Name, and Price!');
+            alert('Please fill in all required information!');
             return;
         }
 
@@ -985,13 +1035,8 @@ td:last-child {
     }
 
     function updateStats() {
-        const countVenuesEl = document.getElementById('count-venues');
-        const countPackagesEl = document.getElementById('count-packages');
-        
         const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
         const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
-        if(countVenuesEl) countVenuesEl.textContent = totalVenues + " Venues";
-        if(countPackagesEl) countPackagesEl.textContent = totalPackages + " Packages";
         
         let pendingCount = 0;
         let confirmedCount = 0;
