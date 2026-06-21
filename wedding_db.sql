@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Jun 12, 2026 at 06:36 PM
+-- Generation Time: Jun 21, 2026 at 02:07 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,7 +31,8 @@ CREATE TABLE `admin` (
   `admin_id` int(11) NOT NULL,
   `admin_name` varchar(100) NOT NULL,
   `admin_email` varchar(100) NOT NULL,
-  `admin_password` varchar(255) NOT NULL
+  `admin_password` varchar(255) NOT NULL,
+  `admin_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -62,7 +63,8 @@ CREATE TABLE `client` (
   `client_name` varchar(100) NOT NULL,
   `client_email` varchar(100) NOT NULL,
   `client_phonenum` varchar(20) NOT NULL,
-  `client_password` varchar(255) NOT NULL
+  `client_password` varchar(255) NOT NULL,
+  `client_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -91,7 +93,10 @@ CREATE TABLE `venue` (
   `venue_capacity` int(11) NOT NULL,
   `venue_price` decimal(10,2) NOT NULL,
   `venue_desc` text NOT NULL,
-  `owner_id` int(11) NOT NULL
+  `owner_id` int(11) NOT NULL,
+  `venue_ssm` varchar(20) NOT NULL,
+  `venue_ssm_file` varchar(255) NOT NULL,
+  `venue_image` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -105,7 +110,8 @@ CREATE TABLE `venue_owner` (
   `owner_name` varchar(100) NOT NULL,
   `owner_email` varchar(100) NOT NULL,
   `owner_phonenum` varchar(20) NOT NULL,
-  `owner_password` varchar(255) NOT NULL
+  `owner_password` varchar(255) NOT NULL,
+  `owner_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -116,7 +122,8 @@ CREATE TABLE `venue_owner` (
 -- Indexes for table `admin`
 --
 ALTER TABLE `admin`
-  ADD PRIMARY KEY (`admin_id`);
+  ADD PRIMARY KEY (`admin_id`),
+  ADD UNIQUE KEY `admin_email` (`admin_email`);
 
 --
 -- Indexes for table `booking`
@@ -131,7 +138,8 @@ ALTER TABLE `booking`
 -- Indexes for table `client`
 --
 ALTER TABLE `client`
-  ADD PRIMARY KEY (`client_id`);
+  ADD PRIMARY KEY (`client_id`),
+  ADD UNIQUE KEY `client_email` (`client_email`);
 
 --
 -- Indexes for table `package`
@@ -150,7 +158,8 @@ ALTER TABLE `venue`
 -- Indexes for table `venue_owner`
 --
 ALTER TABLE `venue_owner`
-  ADD PRIMARY KEY (`owner_id`);
+  ADD PRIMARY KEY (`owner_id`),
+  ADD UNIQUE KEY `owner_email` (`owner_email`);
 
 --
 -- AUTO_INCREMENT for dumped tables
