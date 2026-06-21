@@ -239,6 +239,12 @@ th, td {
     border-bottom: 1px solid #edf2f7;
 }
 
+/* Penambahan CSS untuk memaparkan senarai dengan jelas */
+.inclusions-cell {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
 th {
     font-weight: 600;
     color: #718096;
@@ -531,10 +537,10 @@ td:last-child {
     </div>
 
     <div class="stats-container">
-        <div class="stat-card" id="count-venues">2 Venues</div>
-        <div class="stat-card" id="count-packages">2 Packages</div>
         <div class="stat-card" id="count-pending">0 Pending Bookings</div>
         <div class="stat-card" id="count-confirmed">0 Confirmed Bookings</div>
+        <div class="stat-card" id="count-completed">0 Completed Bookings</div>
+        <div class="stat-card" id="count-cancelled">0 Cancelled Bookings</div>
     </div>
 
     <div id="section-venues" class="content-section active-section">
@@ -582,7 +588,7 @@ td:last-child {
                     <th>Venue Name</th>
                     <th>Package Name</th>
                     <th>Price (RM)</th>
-                    <th>Inclusions</th>
+                    <th>Package Inclusions</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -591,7 +597,14 @@ td:last-child {
                     <td>Dewan Serbaguna Telok Mas</td>
                     <td>Basic Package</td>
                     <td>12,000</td>
-                    <td>Nasi, ayam, daging, sayur, buah, air</td>
+                    <td class="inclusions-cell">- Standard pelamin setup
+- Standard backdrop setup
+- Simple floral decoration
+- 1 nasi (Nasi putih)
+- 2 lauk (Ayam masak merah + Daging masak hitam)
+- 1 sayur (Campur)
+- 1 buah (Tembikai)
+- 1 air (Sirap)</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
                     </td>
@@ -600,7 +613,15 @@ td:last-child {
                     <td>Dahlia Wedding Hall</td>
                     <td>Silver Package</td>
                     <td>15,000</td>
-                    <td>Basic + udang, kuih, sate</td>
+                    <td class="inclusions-cell">- Pelamin setup with floral design
+- Upgraded backdrop design (Fabric drapping)
+- Medium floral decoration
+- 3 nasi (Nasi putih)
+- 2 lauk (Ayam masak merah + Daging masak hitam)
+- 1 sayur (Campur)
+- 2 buah (Tembikai + Oren)
+- 2 air (Sirap + Oren)
+- 1 dessert (Kek Brownies)</td>
                     <td>
                         <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
                     </td>
@@ -710,7 +731,6 @@ td:last-child {
                 <label>Upload Certificate (SSM)</label>
                 <input type="file" id="v-certificate" accept=".pdf, .jpg, .jpeg, .png" required>
             </div>
-            
             <div class="form-actions">
                 <button type="button" class="btn-cancel" onclick="closeModal('modal-add-venue')">Cancel</button>
                 <button type="button" class="btn-submit" onclick="addNewVenue()">Save Venue</button>
@@ -740,8 +760,8 @@ td:last-child {
                 <input type="text" id="p-price" required>
             </div>
             <div class="form-group">
-                <label>Inclusions</label>
-                <textarea id="p-inclusions" style="height: 80px; resize: none;" placeholder="e.g., nasi, ayam, air, etc"></textarea>
+                <label>Package Inclusions</label>
+                <textarea id="p-inclusions" style="height: 80px; resize: none;" placeholder="e.g., - nasi&#10;- ayam&#10;- air"></textarea>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn-cancel" onclick="closeModal('modal-add-package')">Cancel</button>
@@ -771,7 +791,7 @@ td:last-child {
                 <input type="text" id="edit-p-price" required>
             </div>
             <div class="form-group">
-                <label>Inclusions</label>
+                <label>Package Inclusions</label>
                 <textarea id="edit-p-inclusions" style="height: 80px; resize: none;"></textarea>
             </div>
             <div class="form-actions">
@@ -815,7 +835,6 @@ td:last-child {
     function switchTab(tabName) {
         const sections = document.querySelectorAll('.content-section');
         sections.forEach(section => section.classList.remove('active-section'));
-
         const links = document.querySelectorAll('.nav-links a');
         links.forEach(link => link.classList.remove('active'));
         document.getElementById('section-' + tabName).classList.add('active-section');
@@ -828,17 +847,14 @@ td:last-child {
             rowToDelete = buttonElement.closest('tr');
             const promptText = document.getElementById('delete-prompt-text');
             const confirmBtn = document.getElementById('btn-confirm-delete-action');
-            
             if (type === 'venue') {
                 promptText.textContent = "Are you sure you want to delete this venue? This action cannot be undone.";
                 confirmBtn.setAttribute('onclick', "confirmDelete('Venue Deleted Successfully!')");
             }
         }
-
         if (modalId === 'modal-edit-package' && type === 'package') {
             rowToEdit = buttonElement.closest('tr');
             const cells = rowToEdit.getElementsByTagName('td');
-            
             document.getElementById('edit-p-venue').value = cells[0].textContent;
             document.getElementById('edit-p-name').value = cells[1].textContent;
             document.getElementById('edit-p-price').value = cells[2].textContent;
@@ -915,13 +931,12 @@ td:last-child {
             <td>${venue}</td>
             <td>${name}</td>
             <td>${price}</td>
-            <td>${inclusions ? inclusions : '-'}</td>
+            <td class="inclusions-cell">${inclusions ? inclusions : '-'}</td>
             <td>
                 <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
             </td>
         `;
         tbody.appendChild(newRow);
-        
         updateStats(); 
         document.getElementById('form-add-package').reset(); 
         submitForm('modal-add-package', 'Package Added Successfully!');
@@ -936,7 +951,6 @@ td:last-child {
             alert('Please fill in all required information!');
             return;
         }
-
         if (rowToEdit) {
             const cells = rowToEdit.getElementsByTagName('td');
             cells[0].textContent = venue;
@@ -944,7 +958,6 @@ td:last-child {
             cells[2].textContent = price;
             cells[3].textContent = inclusions ? inclusions : '-';
         }
-
         closeModal('modal-edit-package');
         triggerToast('Package Updated Successfully!');
         rowToEdit = null;
@@ -979,21 +992,31 @@ td:last-child {
     }
 
     function updateStats() {
+        const countVenuesEl = document.getElementById('count-venues');
+        const countPackagesEl = document.getElementById('count-packages');
+        
         const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
         const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
+        if(countVenuesEl) countVenuesEl.textContent = totalVenues + " Venues";
+        if(countPackagesEl) countPackagesEl.textContent = totalPackages + " Packages";
         
         let pendingCount = 0;
         let confirmedCount = 0;
+        let completedCount = 0;
+        let cancelledCount = 0;
+        
         const dropdowns = document.querySelectorAll('#table-bookings tbody .select-status');
         dropdowns.forEach(select => {
             const currentStatus = select.value;
             if (currentStatus === 'Pending') pendingCount++;
             if (currentStatus === 'Confirmed') confirmedCount++;
+            if (currentStatus === 'Completed') completedCount++;
+            if (currentStatus === 'Cancelled') cancelledCount++;
         });
-        document.getElementById('count-venues').textContent = totalVenues + " Venues";
-        document.getElementById('count-packages').textContent = totalPackages + " Packages";
         document.getElementById('count-pending').textContent = pendingCount + " Pending Bookings";
         document.getElementById('count-confirmed').textContent = confirmedCount + " Confirmed Bookings";
+        document.getElementById('count-completed').textContent = completedCount + " Completed Bookings";
+        document.getElementById('count-cancelled').textContent = cancelledCount + " Cancelled Bookings";
     }
 
     function triggerToast(message) {
