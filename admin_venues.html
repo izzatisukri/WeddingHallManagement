@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - All Venues</title>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 * {
     margin: 0;
@@ -30,13 +32,13 @@ body {
     padding: 24px 5%;
     border-bottom: 1px solid #e2e8f0;
     display: flex;
-    flex-direction: column; /* Menyusun ke bawah */
-    align-items: center;    /* Meletakkan di tengah-tengah */
-    gap: 16px;              /* Jarak antara tajuk dan menu navigasi */
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
 }
 
 .logo-area {
-    font-size: 24px;        
+    font-size: 24px;       
     font-weight: 700;
     color: #4a042e;
     letter-spacing: -0.5px;
@@ -135,10 +137,80 @@ body {
     border-bottom: 1px solid #edf2f7;
 }
 
+.section-title-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.title-inline-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.package-select {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4a5568;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.package-select:focus {
+    border-color: #710349;
+}
+
+.fade-in-row {
+    animation: fadeInRow 0.4s ease forwards;
+}
+
+@keyframes fadeInRow {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .section-header h3 {
     font-size: 20px;
     font-weight: 600;
     color: #1a202c;
+}
+
+.sub-nav {
+    display: flex;
+    gap: 20px;
+}
+
+.sub-nav span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+    cursor: pointer;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sub-nav span:hover {
+    color: #710349;
+}
+
+.sub-nav span.active-sub {
+    color: #1a202c;
+    font-weight: 600;
+    border-bottom: 2px solid #1a202c;
+}
+
+.chart-container {
+    display: none;
+    max-width: 400px;
+    margin: 20px auto;
 }
 
 .btn-delete {
@@ -189,11 +261,6 @@ tr:hover td {
 
 td:last-child {
     white-space: nowrap;
-}
-
-.status-active {
-    color: #2f855a;
-    font-weight: 600;
 }
 
 .modal-overlay {
@@ -315,6 +382,53 @@ td:last-child {
     opacity: 1;
     transform: translateY(0);
 }
+
+/* KEMAS KINI KOTAK WARNA */
+.select-approved {
+    background-color: #e6fffa !important;
+    color: #2f855a !important;
+    border-color: #b2f5ea !important;
+}
+
+/* Warna Merah untuk Rejected */
+.select-rejected {
+    background-color: #fff5f5 !important;
+    color: #e53e3e !important;
+    border-color: #fed7d7 !important;
+}
+
+.modal-box-view-image {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 650px;
+    border-radius: 16px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: modalSlideUp 0.3s ease;
+}
+.modal-box-view-image img {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+.btn-close-image {
+    background-color: #710349;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.btn-close-image:hover {
+    background-color: #520235;
+}
 </style>
 </head>
 <body>
@@ -325,6 +439,7 @@ td:last-child {
         <div class="nav-links">
             <a href="admin_dashboard.html">Dashboard</a>
             <a href="admin_venues.html" class="active">All Venues</a>
+            <a href="admin_pacakges.html">All Packages</a>
             <a href="admin_users.html">All Users</a>
             <a href="admin_bookings.html">All Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
@@ -338,46 +453,77 @@ td:last-child {
 
     <div class="content-section" style="display: block;">
         <div class="section-header">
-            <h3>All Venues</h3>
+            <div class="section-title-container">
+                <div class="title-inline-container">
+                    <h3>All Venues</h3>
+                </div>
+                <div class="sub-nav">
+                    <span id="sub-chart" onclick="toggleView('chart')">Chart</span>
+                    <span id="sub-list" class="active-sub" onclick="toggleView('list')">List</span>
+                </div>
+            </div>
         </div>
-        <table id="table-venues">
-            <thead>
-                <tr>
-                    <th>Venue Name</th>
-                    <th>Owner Name</th>
-                    <th>Area</th>
-                    <th>Capacity</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>Ahmad bin Abu</td>
-                    <td>Teluk Mas</td>
-                    <td>700</td>
-                    <td><span class="status-active">Active</span></td>
-                    <td>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', this)">Delete</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Dahlia Wedding Hall</td>
-                    <td>Sarah binti Zahar</td>
-                    <td>Alor Gajah</td>
-                    <td>1,000</td>
-                    <td><span class="status-active">Active</span></td>
-                    <td>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', this)">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+
+        <div id="view-chart" class="chart-container">
+            <canvas id="venueOwnerChart"></canvas>
+        </div>
+
+        <div id="view-list" style="display: block;">
+            <table id="table-venues">
+                <thead>
+                    <tr>
+                        <th>Owner Name</th>
+                        <th>Venue Name</th>
+                        <th>Full Address</th>
+                        <th>Capacity</th>
+                        <th>SSM Number</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-package="basic">
+                        <td>Ahmad Bin Abu</td>
+                        <td>Dewan Serbaguna Telok Mas</td>
+                        <td>No 12, Jalan Hang Tuah, Telok Mas, Melaka</td>
+                        <td>700</td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                        <td>
+                            <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
+                                <option value="approved" class="select-approved" selected>Approved</option>
+                                <option value="rejected" class="select-rejected">Rejected</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr data-package="silver">
+                        <td>Ahmad Bin Abu</td>
+                        <td>Dahlia Wedding Hall</td>
+                        <td>KM 25, Jalan Simpang Ampat, Alor Gajah, Melaka</td>
+                        <td>1,000</td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                        <td>
+                            <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
+                                <option value="approved" class="select-approved" selected>Approved</option>
+                                <option value="rejected" class="select-rejected">Rejected</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <div class="toast-notification" id="toast-global"></div>
+
+<div id="modal-view-image" class="modal-overlay">
+    <div class="modal-box-view-image">
+        <h3 style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">SSM Certificate View</h3>
+        <img id="ssm-img-placeholder" src="" alt="SSM Certificate">
+        <div class="form-actions" style="justify-content: center; margin-top: 0;">
+            <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
+        </div>
+    </div>
+</div>
 
 <div id="modal-delete-confirmation" class="modal-overlay">
     <div class="modal-box-delete">
@@ -401,6 +547,84 @@ td:last-child {
 
 <script>
     let rowToDelete = null; 
+    let myPieChart = null; 
+
+    function updateDropdownColor(selectElement) {
+        if (selectElement.value === 'approved') {
+            selectElement.className = 'package-select select-approved';
+        } else {
+            selectElement.className = 'package-select select-rejected';
+        }
+    }
+
+    function openImageModal(imagePath) {
+        document.getElementById('ssm-img-placeholder').src = imagePath;
+        document.getElementById('modal-view-image').style.display = 'flex';
+    }
+
+    function toggleView(viewType) {
+        const chartView = document.getElementById('view-chart');
+        const listView = document.getElementById('view-list');
+        const subChart = document.getElementById('sub-chart');
+        const subList = document.getElementById('sub-list');
+
+        if (viewType === 'chart') {
+            chartView.style.display = 'block';
+            listView.style.display = 'none';
+            subChart.classList.add('active-sub');
+            subList.classList.remove('active-sub');
+            renderPieChart(); 
+        } else {
+            chartView.style.display = 'none';
+            listView.style.display = 'block';
+            subChart.classList.remove('active-sub');
+            subList.classList.add('active-sub');
+        }
+    }
+
+    function renderPieChart() {
+        const rows = document.querySelectorAll('#table-venues tbody tr');
+        const ownerCounts = {};
+
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const ownerName = row.cells[0].textContent.trim(); 
+                ownerCounts[ownerName] = (ownerCounts[ownerName] || 0) + 1;
+            }
+        });
+
+        const labels = Object.keys(ownerCounts);
+        const data = Object.values(ownerCounts);
+
+        if (myPieChart) {
+            myPieChart.destroy();
+        }
+
+        if (labels.length === 0) {
+            return;
+        }
+
+        const ctx = document.getElementById('venueOwnerChart').getContext('2d');
+        myPieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Number of halls',
+                    data: data,
+                    backgroundColor: ['#710349', '#4a042e', '#ed64a6', '#ecc94b'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Number of Halls by Owner' }
+                }
+            }
+        });
+    }
 
     function openModal(modalId, buttonElement) {
         document.getElementById(modalId).style.display = 'flex';
@@ -428,6 +652,10 @@ td:last-child {
         }
         closeModal('modal-delete-confirmation');
         triggerToast(message);
+        
+        if (document.getElementById('view-chart').style.display === 'block') {
+            renderPieChart();
+        }
     }
 
     function confirmLogout() {
