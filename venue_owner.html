@@ -239,7 +239,6 @@ th, td {
     border-bottom: 1px solid #edf2f7;
 }
 
-/* Penambahan CSS untuk memaparkan senarai dengan jelas */
 .inclusions-cell {
     white-space: pre-line;
     line-height: 1.6;
@@ -744,12 +743,8 @@ td:last-child {
         <h3>Add New Package</h3>
         <form id="form-add-package">
             <div class="form-group">
-                <label>Select Venue</label>
-                <select id="p-venue" required>
-                    <option value="" disabled selected>Choose venue</option>
-                    <option value="Dewan Serbaguna Telok Mas">Dewan Serbaguna Telok Mas</option>
-                    <option value="Dahlia Wedding Hall">Dahlia Wedding Hall</option>
-                </select>
+                <label>Enter Your Venue Name</label>
+                <input type="text" id="p-venue" placeholder="e.g., Dewan Serbaguna Telok Mas" required>
             </div>
             <div class="form-group">
                 <label>Package Name</label>
@@ -900,15 +895,13 @@ td:last-child {
         `;
         tbody.appendChild(newRow); 
         
-        const pVenueSelect = document.getElementById('p-venue');
         const editPVenueSelect = document.getElementById('edit-p-venue');
         
-        [pVenueSelect, editPVenueSelect].forEach(select => {
-            const newOption = document.createElement('option');
-            newOption.value = name;
-            newOption.textContent = name;
-            select.appendChild(newOption);
-        });
+        const newOption = document.createElement('option');
+        newOption.value = name;
+        newOption.textContent = name;
+        editPVenueSelect.appendChild(newOption);
+
         updateStats(); 
         document.getElementById('form-add-venue').reset(); 
         closeModal('modal-add-venue');
@@ -921,7 +914,7 @@ td:last-child {
         const price = document.getElementById('p-price').value;
         const inclusions = document.getElementById('p-inclusions').value;
         if(venue === '' || name === '' || price === '') {
-            alert('Please select Venue, Package Name, and Price!');
+            alert('Please fill in Venue, Package Name, and Price!');
             return;
         }
 
