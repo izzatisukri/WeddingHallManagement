@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -167,15 +168,6 @@ body {
     border-color: #710349;
 }
 
-.fade-in-row {
-    animation: fadeInRow 0.4s ease forwards;
-}
-
-@keyframes fadeInRow {
-    from { opacity: 0; transform: translateY(3px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 .section-header h3 {
     font-size: 20px;
     font-weight: 600;
@@ -228,6 +220,22 @@ body {
 .btn-delete:hover {
     background-color: #e53e3e;
     color: white;
+}
+
+.btn-view {
+    background-color: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+.btn-view:hover {
+    background-color: #edf2f7;
+    color: #1a202c;
 }
 
 table {
@@ -370,7 +378,6 @@ td:last-child {
     font-weight: 600;
     z-index: 1010;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    
     visibility: hidden;
     opacity: 0;
     transform: translateY(10px);
@@ -383,14 +390,12 @@ td:last-child {
     transform: translateY(0);
 }
 
-/* KEMAS KINI KOTAK WARNA */
 .select-approved {
     background-color: #e6fffa !important;
     color: #2f855a !important;
     border-color: #b2f5ea !important;
 }
 
-/* Warna Merah untuk Rejected */
 .select-rejected {
     background-color: #fff5f5 !important;
     color: #e53e3e !important;
@@ -405,8 +410,17 @@ td:last-child {
     padding: 25px;
     text-align: center;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    animation: modalSlideUp 0.3s ease;
+    animation: fadeIn 0.4s ease-out;
+    position: relative;
 }
+
+.modal-box-view-image h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #1a202c;
+    font-weight: 500;
+}
+
 .modal-box-view-image img {
     max-width: 100%;
     max-height: 60vh;
@@ -415,7 +429,35 @@ td:last-child {
     object-fit: contain;
     margin-bottom: 15px;
 }
-.btn-close-image {
+
+.modal-box-view-image p {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #4a5568;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 40%;
+    transform: translateY(-50%);
+    background: #710349;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.prev-arrow { left: 10px; }
+.next-arrow { right: 10px; }
+
+.btn-close-purple {
     background-color: #710349;
     color: #ffffff;
     border: none;
@@ -425,9 +467,6 @@ td:last-child {
     border-radius: 8px;
     cursor: pointer;
     transition: background 0.2s ease;
-}
-.btn-close-image:hover {
-    background-color: #520235;
 }
 </style>
 </head>
@@ -476,6 +515,7 @@ td:last-child {
                         <th>Venue Name</th>
                         <th>Full Address</th>
                         <th>Capacity</th>
+                        <th>Venues Images</th>
                         <th>SSM Number</th>
                         <th>Status</th>
                     </tr>
@@ -486,7 +526,8 @@ td:last-child {
                         <td>Dewan Serbaguna Telok Mas</td>
                         <td>No 12, Jalan Hang Tuah, Telok Mas, Melaka</td>
                         <td>700</td>
-                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                        <td><button class="btn-view" onclick="openImageModal(['images/weddingVenue.jpg', 'images/pelamin.jpg'], 'Dewan Serbaguna Telok Mas', false)">View</button></td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal(['images/ssmCert.jpg'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
                         <td>
                             <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
                                 <option value="approved" class="select-approved" selected>Approved</option>
@@ -499,7 +540,8 @@ td:last-child {
                         <td>Dahlia Wedding Hall</td>
                         <td>KM 25, Jalan Simpang Ampat, Alor Gajah, Melaka</td>
                         <td>1,000</td>
-                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                        <td><button class="btn-view" onclick="openImageModal(['images/weddingVenue1.jpg', 'images/pelamin1.jpg'], 'Dahlia Wedding Hall', false)">View</button></td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal(['images/ssmCert.jpg'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
                         <td>
                             <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
                                 <option value="approved" class="select-approved" selected>Approved</option>
@@ -517,11 +559,12 @@ td:last-child {
 
 <div id="modal-view-image" class="modal-overlay">
     <div class="modal-box-view-image">
-        <h3 style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">SSM Certificate View</h3>
-        <img id="ssm-img-placeholder" src="" alt="SSM Certificate">
-        <div class="form-actions" style="justify-content: center; margin-top: 0;">
-            <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
-        </div>
+        <h4 id="img-title">Venue Pictures</h4>
+        <img id="img-gallery-placeholder" src="" alt="Image">
+        <p id="img-counter">Picture 1 of 2</p>
+        <button id="btn-prev" class="nav-arrow prev-arrow" onclick="changeImage(-1)">&#10094;</button>
+        <button id="btn-next" class="nav-arrow next-arrow" onclick="changeImage(1)">&#10095;</button>
+        <button class="btn-close-purple" onclick="closeModal('modal-view-image')">Close</button>
     </div>
 </div>
 
@@ -548,6 +591,8 @@ td:last-child {
 <script>
     let rowToDelete = null; 
     let myPieChart = null; 
+    let currentImages = [];
+    let currentIdx = 0;
 
     function updateDropdownColor(selectElement) {
         if (selectElement.value === 'approved') {
@@ -557,9 +602,27 @@ td:last-child {
         }
     }
 
-    function openImageModal(imagePath) {
-        document.getElementById('ssm-img-placeholder').src = imagePath;
+    function openImageModal(imageArray, title, isSSM) {
+        currentImages = imageArray;
+        currentIdx = 0;
+        document.getElementById('img-title').textContent = title;
+        document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
+        document.getElementById('img-counter').textContent = isSSM ? "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
+        
+        // Sembunyi atau tunjuk butang navigasi
+        const navStyle = isSSM ? 'none' : 'flex';
+        document.getElementById('btn-prev').style.display = navStyle;
+        document.getElementById('btn-next').style.display = navStyle;
+        
         document.getElementById('modal-view-image').style.display = 'flex';
+    }
+
+    function changeImage(step) {
+        currentIdx += step;
+        if (currentIdx < 0) currentIdx = currentImages.length - 1;
+        if (currentIdx >= currentImages.length) currentIdx = 0;
+        document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
+        document.getElementById('img-counter').textContent = `Picture ${currentIdx + 1} of ${currentImages.length}`;
     }
 
     function toggleView(viewType) {
