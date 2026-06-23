@@ -3,516 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Dashboard</title>
+    <title>Admin Panel | Wedding Hall Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Georgia', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f0e8;
+            padding: 40px 20px;
+        }
 
-body {
-    background-color: #f4f5f7;
-    color: #2d3748;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-}
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-.container {
-    width: 100%;
-    padding-bottom: 60px;
-}
+        /* Header - same as index page */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
 
-.header {
-    background-color: #ffffff;
-    padding: 24px 5%;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-}
+        .header h1 {
+            font-size: 32px;
+            color: #8B3A3A;
+            margin-bottom: 10px;
+        }
 
-.logo-area {
-    font-size: 24px;
-    font-weight: 700;
-    color: #4a042e;
-    letter-spacing: -0.5px;
-}
+        .header h2 {
+            font-size: 24px;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
 
-.nav-links {
-    display: flex;
-    justify-content: center;
-    gap: 25px;
-}
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
 
-.nav-links a {
-    text-decoration: none;
-    color: #718096;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 6px 4px;
-    transition: color 0.2s ease, border-color 0.2s ease;
-    border-bottom: 2px solid transparent;
-}
+        /* Navigation Menu */
+        .nav-menu {
+            background: white;
+            border-radius: 8px;
+            padding: 15px 25px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
-.nav-links a:hover {
-    color: #710349;
-}
+        .nav-menu a {
+            color: #8B3A3A;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            display: inline-block;
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
 
-.nav-links a.active {
-    color: #710349;
-    border-bottom: 2px solid #710349;
-}
+        .nav-menu a:hover {
+            background: #8B3A3A;
+            color: white;
+            border-radius: 5px;
+        }
 
-.nav-links a.logout {
-    color: #e53e3e;
-}
+        .nav-menu a.active {
+            background: #8B3A3A;
+            color: white;
+            border-radius: 5px;
+        }
 
-.nav-links a.logout:hover {
-    color: #c53030;
-}
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
-.welcome-banner {
-    background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
-    color: white;
-    margin: 40px auto 25px auto;
-    padding: 40px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 1200px;
-    box-shadow: 0 4px 20px rgba(113, 3, 73, 0.15);
-    text-align: center;
-}
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #8B3A3A;
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0e0d0;
+        }
 
-.welcome-banner h2 {
-    font-size: 26px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-}
+        /* Filter Section */
+        .filter-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
 
-.welcome-banner p {
-    font-size: 15px;
-    color: #f7fafc;
-    opacity: 0.85;
-}
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
 
-.content-section {
-    background: linear-gradient(135deg, #510233 0%, #32021f 100%);
-    color: #ffffff;
-    margin: 0 auto;
-    padding: 35px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 1200px;
-    position: relative;
-    min-height: 450px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    border: 1px solid #4a042e;
-    animation: fadeIn 0.3s ease;
-}
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #8B3A3A;
+        }
 
-.content-section.active-section {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
+        .filter-group select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            min-width: 150px;
+            cursor: pointer;
+            background: white;
+        }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+        .btn-generate {
+            background: #8B3A3A;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
+        .btn-generate:hover {
+            background: #6b2a2a;
+        }
 
-.section-header h3 {
-    font-size: 22px;
-    font-weight: 600;
-    color: #ffffff;
-}
+        /* Booking Stats */
+        .booking-stats {
+            text-align: center;
+            padding: 30px;
+            background: #faf6f0;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
 
-.btn-premium {
-    background-color: #ffffff;
-    color: #4a042e;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
+        .booking-number {
+            font-size: 52px;
+            font-weight: bold;
+            color: #8B3A3A;
+        }
 
-.btn-premium:hover {
-    background-color: #f7fafc;
-    transform: translateY(-1px);
-}
+        .booking-label {
+            color: #666;
+            margin-top: 8px;
+            font-size: 14px;
+        }
 
-.filter-controls {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-}
+        /* Halls Grid*/
+        .halls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
 
-.custom-select {
-    background-color: #ffffff;
-    color: #2d3748;
-    padding: 10px 18px;
-    font-size: 14px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-    min-width: 110px;
-}
+        .hall-card {
+            background: #faf6f0;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e8dccc;
+            transition: transform 0.3s;
+        }
 
-.custom-select:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
-}
+        .hall-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
 
-.chart-legend {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    color: #e2e8f0;
-    margin-bottom: 30px;
-    margin-top: -5px;
-}
+        .hall-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #8B3A3A;
+            margin-bottom: 15px;
+        }
 
-.legend-color {
-    width: 30px;
-    height: 14px;
-    background-color: #4b52ff;
-    border-radius: 4px;
-}
+        .hall-status {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            margin: 10px 0;
+        }
 
-.chart-container {
-    position: relative;
-    width: 100%;
-    height: 300px;
-    margin-top: 20px;
-}
+        .hall-status span {
+            font-size: 14px;
+            font-weight: normal;
+            color: #666;
+        }
 
-.chart-lines {
-    position: absolute;
-    width: 100%;
-    height: 250px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
+        hr {
+            margin: 15px 0;
+            border: none;
+            border-top: 1px solid #e8dccc;
+        }
 
-.chart-row {
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
+        .hall-detail {
+            font-size: 13px;
+            color: #666;
+        }
 
-.axis-label {
-    width: 25px;
-    font-size: 13px;
-    color: #cbd5e0;
-}
+        /* Welcome box */
+        .welcome-box {
+            background: linear-gradient(135deg, #8B3A3A, #6b2a2a);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
 
-.grid-line {
-    flex-grow: 1;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+        .welcome-box h3 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
 
-.bars-area {
-    position: absolute;
-    left: 25px;
-    bottom: 50px;
-    width: calc(100% - 25px);
-    height: 250px;
-    display: flex;
-    gap: 60px;
-    padding-left: 20px;
-    align-items: flex-end;
-}
-
-.bar-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 140px;
-    height: 100%;
-    justify-content: flex-end;
-}
-
-.bar {
-    width: 100%;
-    background: linear-gradient(to top, #3b42ff, #5c62ff);
-    height: 0%;
-    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 4px 4px 0 0;
-    box-shadow: 0 4px 12px rgba(59, 66, 255, 0.3);
-}
-
-.bar-label {
-    position: absolute;
-    bottom: -40px;
-    font-size: 13px;
-    color: #e2e8f0;
-    text-align: center;
-    line-height: 1.4;
-    width: 150px;
-    white-space: normal;
-}
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(26, 32, 44, 0.5);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    display: none;
-}
-
-.modal-box {
-    background-color: #ffffff;
-    width: 90%;
-    border-radius: 16px;
-    padding: 35px;
-    color: #1a202c;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e8f0;
-    animation: modalSlideUp 0.3s ease;
-    max-width: 440px; 
-    text-align: center;
-}
-
-@keyframes modalSlideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.form-actions {
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 30px;
-}
-
-.btn-cancel {
-    background-color: #ffffff;
-    color: #4a5568;
-    border: 1px solid #cbd5e0;
-    padding: 10px 24px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-}
-
-.btn-confirm-ok {
-    background-color: #e53e3e;
-    color: #ffffff;
-    border: none;
-    padding: 11px 28px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.toast-notification {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    background-color: #2f855a;
-    color: white;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 1010;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    visibility: hidden;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toast-notification.show-toast {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-}
-</style>
+        .welcome-box p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="header">
-        <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
-        <div class="nav-links">
-            <a href="admin_dashboard.html" class="active">Dashboard</a>
-            <a href="admin_venues.html">All Venues</a>
-            <a href="admin_users.html">All Users</a>
-            <a href="admin_bookings.html">All Bookings</a>
-            <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
+    <div class="container">
+        <div class="header">
+            <h1>Wedding Hall Management</h1>
         </div>
-    </div>
 
-    <div class="welcome-banner">
-        <h2>Welcome, Admin! 👑</h2>
-        <p>Manage users, venues and generate reports.</p>
-    </div>
+        <div class="nav-menu">
+            <a href="#" class="active">Dashboard</a>
+            <a href="#">All venues</a>
+            <a href="#">All Users</a>
+            <a href="#">All Bookings</a>
+            <a href="#">Log out</a>
+        </div>
 
-    <div class="content-section">
-        <div class="section-header">
-            <h3>Monthly Booking Report 🗓️</h3>
+        <div class="welcome-box">
+            <h3>Welcome, Admin! 🎉</h3>
+            <p>Manage users, venues and generate reports.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Monthly Booking Report</div>
             
-            <div class="filter-controls">
-                <select class="custom-select" id="month-select">
-                    <option value="Month" selected>Month</option> 
-                    <option value="January">January</option>
-                    <option value="February">February</option>
-                    <option value="March">March</option>
-                    <option value="April">April</option>
-                    <option value="May">May</option>
-                    <option value="June">June</option>
-                    <option value="July">July</option>
-                    <option value="August">August</option>
-                    <option value="September">September</option>
-                    <option value="October">October</option>
-                    <option value="November">November</option>
-                    <option value="December">December</option>
-                </select>
-                
-                <select class="custom-select" id="year-select">
-                    <option value="Year" selected>Year</option> 
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
-                
-                <button class="btn-premium" onclick="triggerReportGeneration()">Generate Report</button>
-            </div>
-        </div>
-
-        <div class="chart-legend">
-            <div class="legend-color"></div>
-            <span>Number of booking</span>
-        </div>
-
-        <div class="chart-container">
-            <div class="chart-lines">
-                <div class="chart-row"><span class="axis-label">6</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">5</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">4</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">3</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">2</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">1</span><div class="grid-line"></div></div>
-                <div class="chart-row"><span class="axis-label">0</span><div class="grid-line"></div></div>
-            </div>
-
-            <div class="bars-area">
-                <div class="bar-wrapper">
-                    <div class="bar" id="bar-dewan" style="height: 0%;"></div> 
-                    <div class="bar-label">Dewan Serbaguna<br>Teluk Mas</div>
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="filter-group">
+                    <label>Month ▼</label>
+                    <select id="month">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12" selected>December</option>
+                    </select>
                 </div>
-                <div class="bar-wrapper">
-                    <div class="bar" id="bar-dahlia" style="height: 0%;"></div> 
-                    <div class="bar-label">Dahlia Wedding Hall</div>
+                
+                <div class="filter-group">
+                    <label>Year ▼</label>
+                    <select id="year">
+                        <option value="2023">2023</option>
+                        <option value="2024" selected>2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                
+                <button class="btn-generate" onclick="generateReport()">Generate Report</button>
+            </div>
+
+            <div class="booking-stats">
+                <div class="booking-number" id="bookingCount">28</div>
+                <div class="booking-label">Number of booking</div>
+            </div>
+
+            <div class="halls-grid">
+                <div class="hall-card">
+                    <div class="hall-name">Dewan Serbaguna Teluk Mas</div>
+                    <div class="hall-status">12 <span>Bookings</span></div>
+                    <hr>
+                    <div class="hall-detail">Most popular venue</div>
+                </div>
+                
+                <div class="hall-card">
+                    <div class="hall-name">Dahlia Wedding Hall</div>
+                    <div class="hall-status">8 <span>Bookings</span></div>
+                    <hr>
+                    <div class="hall-detail">Active venue</div>
+                </div>
+
+                <div class="hall-card">
+                    <div class="hall-name">Gangsa Grand Ballroom</div>
+                    <div class="hall-status">8 <span>Bookings</span></div>
+                    <hr>
+                    <div class="hall-detail">Active venue</div>
                 </div>
             </div>
-        </div>
-
-    </div>
-</div>
-
-<div class="toast-notification" id="toast-global"></div>
-
-<div id="modal-logout-confirmation" class="modal-overlay">
-    <div class="modal-box">
-        <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
-        <div class="form-actions">
-            <button type="button" class="btn-cancel" onclick="closeModal('modal-logout-confirmation')">Cancel</button>
-            <button type="button" class="btn-confirm-ok" onclick="confirmLogout()">Log Out</button>
         </div>
     </div>
-</div>
 
-<script>
-    function openModal(modalId) {
-        document.getElementById(modalId).style.display = 'flex';
-    }
+    <script>
+        // Sample booking data for different months
+        var bookingData = {
+            '1': 5, '2': 8, '3': 12, '4': 15, '5': 18, '6': 22,
+            '7': 25, '8': 28, '9': 24, '10': 30, '11': 35, '12': 28
+        };
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-
-    function confirmLogout() {
-        window.location.href = 'login.html'; 
-    }
-
-    function triggerReportGeneration() {
-        const month = document.getElementById('month-select').value;
-        const year = document.getElementById('year-select').value;
-
-        if (month === "Month" || year === "Year") {
-            triggerToast('Please select both Month and Year!');
-            document.getElementById('bar-dewan').style.height = "0%";
-            document.getElementById('bar-dahlia').style.height = "0%";
-            return;
-        }
-
-        const barDewan = document.getElementById('bar-dewan');
-        const barDahlia = document.getElementById('bar-dahlia');
-
-        if (month === "August" && year === "2025") {
-            barDewan.style.height = "16.6%"; 
-            barDahlia.style.height = "16.6%"; 
-            triggerToast(`Report for ${month} ${year} updated successfully!`);
-        } else {
-            let random1 = Math.floor(Math.random() * 6) + 1;
-            let random2 = Math.floor(Math.random() * 6) + 1;
-            barDewan.style.height = (random1 / 6 * 100) + "%";
-            barDahlia.style.height = (random2 / 6 * 100) + "%";
-            triggerToast(`Report for ${month} ${year} updated successfully!`);
-        }
-    }
-
-    function triggerToast(message) {
-        const toast = document.getElementById('toast-global');
-        if (toast) {
-            toast.textContent = message;
-            toast.classList.add('show-toast'); 
+        function generateReport() {
+            var month = document.getElementById('month').value;
+            var year = document.getElementById('year').value;
             
-            setTimeout(() => {
-                toast.classList.remove('show-toast'); 
-            }, 3000);
+            var count = bookingData[month] || 0;
+            document.getElementById('bookingCount').innerText = count;
+            
+            var monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+            var monthName = monthNames[parseInt(month) - 1];
+            
+            alert('Report generated for ' + monthName + ' ' + year + '\n\nTotal Bookings: ' + count);
         }
-    }
-
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            event.target.style.display = 'none';
-        }
-    }
-</script>
-
+    </script>
 </body>
 </html>
