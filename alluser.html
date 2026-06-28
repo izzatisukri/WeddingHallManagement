@@ -324,11 +324,9 @@
 
         function confirmDelete() {
             closeModal();
-            // Papar mesej hijau "User Delete Successfully!"
             const alertBox = document.getElementById('successAlert');
             alertBox.style.display = 'block';
             
-            // Sembunyikan semula alert selepas 3 saat
             setTimeout(() => {
                 alertBox.style.display = 'none';
             }, 3000);
