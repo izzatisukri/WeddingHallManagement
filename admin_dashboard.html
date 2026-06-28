@@ -110,7 +110,8 @@ body {
     width: 90%;
     max-width: 1200px;
     position: relative;
-    min-height: 450px;
+    /* Ditambah min-height untuk memberi ruang di bawah select option */
+    min-height: 550px; 
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     border: 1px solid #4a042e;
     animation: fadeIn 0.3s ease;
@@ -130,7 +131,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    /* Ditambah margin bottom yang besar untuk memaksa ruang kosong di bawah dropdown */
+    margin-bottom: 45px;
     padding-bottom: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -369,6 +371,7 @@ body {
         <div class="nav-links">
             <a href="admin_dashboard.html" class="active">Dashboard</a>
             <a href="admin_venues.html">All Venues</a>
+            <a href="admin_pacakges.html">All Packages</a>
             <a href="admin_users.html">All Users</a>
             <a href="admin_bookings.html">All Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
@@ -382,7 +385,7 @@ body {
 
     <div class="content-section">
         <div class="section-header">
-            <h3>Monthly Booking Report 🗓️</h3>
+            <h3>Monthly Booking Report</h3>
             
             <div class="filter-controls">
                 <select class="custom-select" id="month-select">
@@ -431,7 +434,7 @@ body {
             <div class="bars-area">
                 <div class="bar-wrapper">
                     <div class="bar" id="bar-dewan" style="height: 0%;"></div> 
-                    <div class="bar-label">Dewan Serbaguna<br>Teluk Mas</div>
+                    <div class="bar-label">Dewan Serbaguna<br>Telok Mas</div>
                 </div>
                 <div class="bar-wrapper">
                     <div class="bar" id="bar-dahlia" style="height: 0%;"></div> 
@@ -482,15 +485,17 @@ body {
         const barDewan = document.getElementById('bar-dewan');
         const barDahlia = document.getElementById('bar-dahlia');
 
-        if (month === "August" && year === "2025") {
-            barDewan.style.height = "16.6%"; 
-            barDahlia.style.height = "16.6%"; 
+        if (month === "October" && year === "2025") {
+            barDewan.style.height = "16.6%";   
+            barDahlia.style.height = "0%";      
+            triggerToast(`Report for ${month} ${year} updated successfully!`);
+        } else if (month === "August" && year === "2025") {
+            barDewan.style.height = "0%";       
+            barDahlia.style.height = "16.6%";   
             triggerToast(`Report for ${month} ${year} updated successfully!`);
         } else {
-            let random1 = Math.floor(Math.random() * 6) + 1;
-            let random2 = Math.floor(Math.random() * 6) + 1;
-            barDewan.style.height = (random1 / 6 * 100) + "%";
-            barDahlia.style.height = (random2 / 6 * 100) + "%";
+            barDewan.style.height = "0%";
+            barDahlia.style.height = "0%";
             triggerToast(`Report for ${month} ${year} updated successfully!`);
         }
     }
