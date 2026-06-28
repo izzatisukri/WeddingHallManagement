@@ -1,10 +1,10 @@
 <?php
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $email = strtolower(trim($_POST['email']));
     $password = $_POST['password'];
 
-    // Contoh sementara (tanpa database)
     if (strpos($email, "admin") !== false) {
 
         header("Location: admin_dashboard.php");
@@ -26,9 +26,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Account</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login Account</title>
 
 <style>
 * {
@@ -54,61 +54,71 @@ body {
 }
 
 .logo{
-    width:220px;
-    margin-bottom:10px;
+    width:210px;
+    margin-bottom:12px;
 }
 
 .title{
     color:white;
-    margin-bottom:20px;
+    margin-bottom:22px;
+    font-size: 22px;
 }
 
 .form-card{
     background:#DCDCDC;
-    padding:35px;
-    border-radius:20px;
+    padding:38px; 
+    border-radius:18px;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.28); 
 }
 
 .form-group{
-    margin-bottom:18px;
+    margin-bottom:20px; 
 }
 
 .form-group label{
     display:block;
-    margin-bottom:8px;
-    font-weight:bold;
+    margin-bottom:10px; 
+    font-weight:600; 
+    font-size: 14px; 
 }
 
 .form-group input{
     width:100%;
-    padding:12px;
-    border-radius:8px;
+    padding:13px; 
+    border-radius:10px; 
     border:1px solid #ccc;
+    font-size: 14px;
 }
 
 .btn-login{
     width:100%;
-    padding:14px;
+    padding:15px; 
     background:#710349;
     color:white;
     border:none;
-    border-radius:8px;
+    border-radius:10px; 
     cursor:pointer;
-    margin-top:10px;
+    margin-top:12px; 
+    font-size: 15px; 
+    font-weight: 600; 
+    transition: 0.2s ease;
 }
 
 .btn-login:hover{
     background:#540236;
+    transform: scale(1.03);
 }
 
 .footer-links{
-    margin-top:18px;
+    margin-top:20px; 
     text-align:center;
+    font-size: 13px;
 }
 
 .footer-links a{
     color:#710349;
     text-decoration:none;
+    font-weight: 500; 
 }
 
 .footer-links a:hover{
@@ -117,6 +127,7 @@ body {
 </style>
 
 </head>
+
 <body>
 
 <div class="container">
@@ -131,20 +142,12 @@ body {
 
             <div class="form-group">
                 <label>Email Address</label>
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="customer@gmail.com"
-                    required>
+                <input type="email" name="email" placeholder="Enter email address" required>
             </div>
 
             <div class="form-group">
                 <label>Password</label>
-                <input
-                    type="password"
-                    name="password"
-                    placeholder="Enter your password"
-                    required>
+                <input type="password" name="password" placeholder="Enter password" required>
             </div>
 
             <button type="submit" class="btn-login">
@@ -153,7 +156,7 @@ body {
 
             <div class="footer-links">
                 <a href="reset.php">Forgot Password</a> |
-                Don't have an account?
+                Don't have account?
                 <a href="register.php">Register here</a>
             </div>
 
