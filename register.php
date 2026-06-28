@@ -1,3 +1,29 @@
+<?php
+
+$registration_success = false;
+$error_message = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    
+    $fullname = $_POST['fullname'];
+    $email    = $_POST['email'];
+    $phone    = $_POST['phone'];
+    $password = $_POST['password'];
+    $role     = $_POST['role'];
+
+    
+    if ($role === 'client') {
+        header("Location: client.html"); 
+        exit();
+    } else if ($role === 'venue_owner') {
+        header("Location: venue_owner.html");
+        exit();
+    } else if ($role === 'admin') {
+        header("Location: admin_dashboard.html");
+        exit();
+    }
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -243,21 +269,21 @@ body {
         <h2 class="title">Create New Account</h2>
 
         <div class="form-card">
-            <form action="#" method="POST" id="registerForm">
+            <form action="register.php" method="POST" id="registerForm">
                 
                 <div class="form-group">
                     <label for="fullname">Full Name</label>
-                    <input type="text" id="fullname" placeholder="Enter your full name" required>
+                    <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" required>
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="client@gmail.com" required>
+                    <input type="email" id="email" name="email" placeholder="client@gmail.com" required>
                 </div>
 
                 <div class="form-group">
                     <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" placeholder="01xxxxxxxx" required>
+                    <input type="tel" id="phone" name="phone" placeholder="01xxxxxxxx" required>
                 </div>
 
                 <div class="form-group">
@@ -266,92 +292,6 @@ body {
                     <input 
                         type="password" 
                         id="password" 
+                        name="password"
                         placeholder="Create a password" 
-                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$"
-                        title="Password must be at least 6 characters long and include at least one uppercase letter, one lowercase letter, and one symbol."
-                        required>
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm-password">Confirm Password</label>
-                    <input type="password" id="confirm-password" placeholder="Re-enter password" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="role">Register As</label>
-                    <select id="role" required>
-                        <option value="" disabled selected>Select Role</option>
-                        <option value="client">Client</option>
-                        <option value="venue_owner">Venue Owner</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn-register">REGISTER</button>
-
-                <div class="footer-links">
-                    Already have an account? <a href="login.html">Login here</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="customModal">
-        <div class="modal-card">
-            <div class="modal-text" id="modalMessage">
-                Registration Successful! Please click OK to go to your page.
-            </div>
-            <button class="modal-btn" id="modalOkBtn">OK</button>
-        </div>
-    </div>
-
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            const role = document.getElementById('role').value;
-            const modal = document.getElementById('customModal');
-            const modalMessage = document.getElementById('modalMessage');
-            const modalOkBtn = document.getElementById('modalOkBtn');
-
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$/;
-            if (!passwordRegex.test(password)) {
-                modalMessage.innerText = 'Password must be at least 6 characters with uppercase, lowercase, and symbols!';
-                modal.classList.add('active');
-                
-                modalOkBtn.onclick = function() {
-                    modal.classList.remove('active');
-                };
-                return;
-            }
-
-            if (password !== confirmPassword) {
-                modalMessage.innerText = 'Password and Confirm Password do not match!';
-                modal.classList.add('active');
-                
-                modalOkBtn.onclick = function() {
-                    modal.classList.remove('active');
-                };
-                return;
-            }
-
-            modalMessage.innerText = 'Registration Successful! Please click OK to go to your page.';
-            modal.classList.add('active');
-
-            modalOkBtn.onclick = function() {
-                modal.classList.remove('active');
-                
-                if (role === 'client') {
-                    window.location.href = 'client.html';
-                } else if (role === 'venue_owner') {
-                    window.location.href = 'venue_owner.html';
-                } else if (role === 'admin') {
-                    window.location.href = 'admin_dashboard.html';
-                }
-            };
-        });
-    </script>
-</body>
-</html>
+                        pattern="^(?=.*[a-z])(?=.*
