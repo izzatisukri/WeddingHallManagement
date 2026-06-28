@@ -82,7 +82,6 @@ body {
     transition: all 0.4s ease;
 }
 
-/* Bahagian Password disembunyikan pada mulanya */
 #password-section {
     display: none;
     opacity: 0;
@@ -235,24 +234,19 @@ body {
             event.preventDefault();
 
             if (currentStep === 1) {
-                // Sembunyikan bahagian emel & paparkan bahagian password
                 emailSection.style.display = 'none';
                 passwordSection.style.display = 'block';
                 
-                // Tukar teks arahan seperti yang diminta
                 instructionText.innerHTML = '<span style="color: #710349; font-weight: bold;">Account found.</span> Please enter your new password.';
                 
-                // Animasi kelancaran semasa password muncul
                 setTimeout(() => {
                     passwordSection.style.opacity = '1';
                     passwordSection.style.transform = 'translateY(0)';
                 }, 50);
 
-                // Tukar input password menjadi wajib isi (required)
                 document.getElementById('new-password').required = true;
                 document.getElementById('confirm-password').required = true;
 
-                // Tukar teks butang utama
                 submitBtn.innerText = 'Reset Password';
                 currentStep = 2;
 
@@ -265,7 +259,7 @@ body {
                     alert('Passwords do not match! Please check again.');
                 } else {
                     alert('Password has been successfully updated!');
-                    window.location.href = 'login.html'; // Kembali ke login
+                    window.location.href = 'login.html'; 
                 }
             }
         });
