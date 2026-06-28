@@ -1,18 +1,18 @@
 <?php
-// Sambungan ke database wedding_db
+
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "wedding_db";
 $port = 3307;
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+$conn = new mysqli($servername, $username, $password, $dbname, $port);
 
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Ambil data daripada table venue
+
 $sql = "SELECT * FROM venue";
 $result = $conn->query($sql);
 ?>
