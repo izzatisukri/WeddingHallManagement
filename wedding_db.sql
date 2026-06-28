@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Jun 07, 2026 at 04:10 PM
+-- Generation Time: Jun 21, 2026 at 02:07 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,7 +31,8 @@ CREATE TABLE `admin` (
   `admin_id` int(11) NOT NULL,
   `admin_name` varchar(100) NOT NULL,
   `admin_email` varchar(100) NOT NULL,
-  `admin_password` varchar(255) NOT NULL
+  `admin_password` varchar(255) NOT NULL,
+  `admin_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -62,7 +63,8 @@ CREATE TABLE `client` (
   `client_name` varchar(100) NOT NULL,
   `client_email` varchar(100) NOT NULL,
   `client_phonenum` varchar(20) NOT NULL,
-  `client_password` varchar(255) NOT NULL
+  `client_password` varchar(255) NOT NULL,
+  `client_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -75,8 +77,7 @@ CREATE TABLE `package` (
   `package_id` int(11) NOT NULL,
   `package_name` varchar(100) NOT NULL,
   `description` text NOT NULL,
-  `package_price` decimal(10,2) NOT NULL,
-  `venue_id` int(11) NOT NULL
+  `package_price` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -92,7 +93,10 @@ CREATE TABLE `venue` (
   `venue_capacity` int(11) NOT NULL,
   `venue_price` decimal(10,2) NOT NULL,
   `venue_desc` text NOT NULL,
-  `owner_id` int(11) NOT NULL
+  `owner_id` int(11) NOT NULL,
+  `venue_ssm` varchar(20) NOT NULL,
+  `venue_ssm_file` varchar(255) NOT NULL,
+  `venue_image` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -106,7 +110,8 @@ CREATE TABLE `venue_owner` (
   `owner_name` varchar(100) NOT NULL,
   `owner_email` varchar(100) NOT NULL,
   `owner_phonenum` varchar(20) NOT NULL,
-  `owner_password` varchar(255) NOT NULL
+  `owner_password` varchar(255) NOT NULL,
+  `owner_role` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -117,7 +122,8 @@ CREATE TABLE `venue_owner` (
 -- Indexes for table `admin`
 --
 ALTER TABLE `admin`
-  ADD PRIMARY KEY (`admin_id`);
+  ADD PRIMARY KEY (`admin_id`),
+  ADD UNIQUE KEY `admin_email` (`admin_email`);
 
 --
 -- Indexes for table `booking`
@@ -132,14 +138,14 @@ ALTER TABLE `booking`
 -- Indexes for table `client`
 --
 ALTER TABLE `client`
-  ADD PRIMARY KEY (`client_id`);
+  ADD PRIMARY KEY (`client_id`),
+  ADD UNIQUE KEY `client_email` (`client_email`);
 
 --
 -- Indexes for table `package`
 --
 ALTER TABLE `package`
-  ADD PRIMARY KEY (`package_id`),
-  ADD KEY `venue_id` (`venue_id`);
+  ADD PRIMARY KEY (`package_id`);
 
 --
 -- Indexes for table `venue`
@@ -152,7 +158,8 @@ ALTER TABLE `venue`
 -- Indexes for table `venue_owner`
 --
 ALTER TABLE `venue_owner`
-  ADD PRIMARY KEY (`owner_id`);
+  ADD PRIMARY KEY (`owner_id`),
+  ADD UNIQUE KEY `owner_email` (`owner_email`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -205,12 +212,6 @@ ALTER TABLE `booking`
   ADD CONSTRAINT `booking_ibfk_1` FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
   ADD CONSTRAINT `booking_ibfk_2` FOREIGN KEY (`package_id`) REFERENCES `package` (`package_id`),
   ADD CONSTRAINT `booking_ibfk_3` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
-
---
--- Constraints for table `package`
---
-ALTER TABLE `package`
-  ADD CONSTRAINT `package_ibfk_1` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
 
 --
 -- Constraints for table `venue`
