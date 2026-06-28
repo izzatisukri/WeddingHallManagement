@@ -4,6 +4,7 @@ $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "wedding_db";
+$port = 3307;
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
