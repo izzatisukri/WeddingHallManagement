@@ -14,7 +14,7 @@ if (!$conn) {
 }
 
 
-$sql = "SELECT * FROM venues";
+$sql = "SELECT * FROM venue";
 $result = mysqli_query($conn, $sql);
 ?>
 
