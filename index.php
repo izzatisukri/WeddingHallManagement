@@ -15,7 +15,7 @@ if (isset($_GET['logout']) && $_GET['logout'] == 1) {
 $search_location = isset($_GET['search_location']) ? trim($_GET['search_location']) : '';
 $search_budget = isset($_GET['max_budget']) ? trim($_GET['max_budget']) : '';
 
-$show_success = false;
+$show_success = false;    
 $success_message = '';
 $booked_hall = '';
 
