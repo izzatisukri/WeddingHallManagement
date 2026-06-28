@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3307
--- Generation Time: Jun 21, 2026 at 02:07 PM
+-- Generation Time: Jun 28, 2026 at 08:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -64,7 +64,8 @@ CREATE TABLE `client` (
   `client_email` varchar(100) NOT NULL,
   `client_phonenum` varchar(20) NOT NULL,
   `client_password` varchar(255) NOT NULL,
-  `client_role` varchar(20) NOT NULL
+  `client_role` varchar(20) NOT NULL,
+  `client _status` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -76,8 +77,9 @@ CREATE TABLE `client` (
 CREATE TABLE `package` (
   `package_id` int(11) NOT NULL,
   `package_name` varchar(100) NOT NULL,
-  `description` text NOT NULL,
-  `package_price` decimal(10,2) NOT NULL
+  `package_price` decimal(10,2) NOT NULL,
+  `package_inclusions` varchar(700) NOT NULL,
+  `venue_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -96,7 +98,8 @@ CREATE TABLE `venue` (
   `owner_id` int(11) NOT NULL,
   `venue_ssm` varchar(20) NOT NULL,
   `venue_ssm_file` varchar(255) NOT NULL,
-  `venue_image` varchar(255) NOT NULL
+  `venue_image` varchar(255) NOT NULL,
+  `admin_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -111,7 +114,8 @@ CREATE TABLE `venue_owner` (
   `owner_email` varchar(100) NOT NULL,
   `owner_phonenum` varchar(20) NOT NULL,
   `owner_password` varchar(255) NOT NULL,
-  `owner_role` varchar(20) NOT NULL
+  `owner_role` varchar(20) NOT NULL,
+  `owner_status` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -145,14 +149,16 @@ ALTER TABLE `client`
 -- Indexes for table `package`
 --
 ALTER TABLE `package`
-  ADD PRIMARY KEY (`package_id`);
+  ADD PRIMARY KEY (`package_id`),
+  ADD KEY `package_ibfk_1` (`venue_id`);
 
 --
 -- Indexes for table `venue`
 --
 ALTER TABLE `venue`
   ADD PRIMARY KEY (`venue_id`),
-  ADD KEY `owner_id` (`owner_id`);
+  ADD KEY `owner_id` (`owner_id`),
+  ADD KEY `admin_id` (`admin_id`);
 
 --
 -- Indexes for table `venue_owner`
@@ -214,10 +220,17 @@ ALTER TABLE `booking`
   ADD CONSTRAINT `booking_ibfk_3` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
 
 --
+-- Constraints for table `package`
+--
+ALTER TABLE `package`
+  ADD CONSTRAINT `package_ibfk_1` FOREIGN KEY (`venue_id`) REFERENCES `venue` (`venue_id`);
+
+--
 -- Constraints for table `venue`
 --
 ALTER TABLE `venue`
-  ADD CONSTRAINT `venue_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `venue_owner` (`owner_id`);
+  ADD CONSTRAINT `venue_ibfk_1` FOREIGN KEY (`owner_id`) REFERENCES `venue_owner` (`owner_id`),
+  ADD CONSTRAINT `venue_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `admin` (`admin_id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
