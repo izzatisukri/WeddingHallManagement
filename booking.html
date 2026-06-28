@@ -350,7 +350,7 @@
             let weddingDate = document.getElementById('weddingDate').value;
             let guestCount = document.getElementById('guestCount').value;
             let termsChecked = document.getElementById('termsCheck').checked;
-
+                // error message yg kluar if ade something yg takpilih
             if (!packageValue) {
                 alert("Please select a package.");
                 return;
@@ -379,7 +379,7 @@
 
         let today = new Date();
         let minDate = new Date(today);
-        minDate.setDate(today.getDate() + 7);
+        minDate.setDate(today.getDate() + 7); 
         let dateInput = document.getElementById('weddingDate');
         if (dateInput) {
             let yyyy = minDate.getFullYear();
