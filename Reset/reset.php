@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 require_once 'db_connection.php';
 
 header('Content-Type: application/json');
@@ -31,6 +32,110 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             echo json_encode(['status' => 'success', 'message' => 'Password successfully updated.']);
         } else {
             echo json_encode(['status' => 'error', 'message' => 'Failed to update password.']);
+=======
+session_start();
+
+// utk connectkan database dengan php
+$conn = mysqli_connect("localhost:3307", "root", "", "wedding_db");
+
+//utk tgk kalau database tu berjaya ke tak
+if (!$conn) {
+    die("Database Connection Failed: " . mysqli_connect_error());
+}
+
+// utk pastikan takkeluar tulisan pelik pelik
+mysqli_set_charset($conn, "utf8mb4");
+
+//utk message
+$message = "";
+$message_color = "red"; 
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    // ambik dari form lepastu dibersihkn email supaya selamat
+    $email = mysqli_real_escape_string($conn, $_POST['email']); 
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    // setiap form tu kena wajib isi
+    if (empty($email) || empty($new_password) || empty($confirm_password)) {
+        $message = "All fields are required!";
+    }
+    //nk tgk password tu match ke tak
+    else if ($new_password !== $confirm_password) {
+        $message = "Passwords do not match!";
+    }
+    else {
+        // utk pastikan pwd tu at least 6 char, 1 UC, 1 LC, 1 simbol
+        if (strlen($new_password) < 6) {
+            $message = "Password must be at least 6 characters!";
+        }
+        else if (!preg_match('/[A-Z]/', $new_password)) {
+            $message = "Password must contain at least 1 uppercase letter!";
+        }
+        else if (!preg_match('/[a-z]/', $new_password)) {
+            $message = "Password must contain at least 1 lowercase letter!";
+        }
+        else if (!preg_match('/[\W_]/', $new_password)) {
+            $message = "Password must contain at least 1 symbol!";
+        }
+        //kalau user tak jumpa lagi, sistem kosongkan dulu semua info table and  column
+        else {
+            $table_name = "";
+            $pwd_column = "";
+            $email_column = "";
+            
+            // utk check email wyjud dalam table yg mana satu
+            $check_client = mysqli_query($conn, "SELECT client_id FROM client WHERE client_email = '$email'");
+            $check_owner = mysqli_query($conn, "SELECT owner_id FROM venue_owner WHERE owner_email = '$email'");
+            $check_admin = mysqli_query($conn, "SELECT admin_id FROM admin WHERE admin_email = '$email'");
+
+            //kalau user ni client simpan dalam table client
+            if (mysqli_num_rows($check_client) > 0) {
+                $table_name = "client"; 
+                $pwd_column = "client_password";
+                $email_column = "client_email";
+            //kalau user ni owner simpan dalam table owner
+            } else if (mysqli_num_rows($check_owner) > 0) {
+                $table_name = "venue_owner";
+                $pwd_column = "owner_password";
+                $email_column = "owner_email";
+            //kalau user ni admin simpan dalam table admin
+            } else if (mysqli_num_rows($check_admin) > 0) {
+                $table_name = "admin";
+                $pwd_column = "admin_password";
+                $email_column = "admin_email";
+            }
+
+            // klau user wujud, password baru akan diencrypt dulu sebelum disimpan
+            if ($table_name != "") {
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+
+                // system nk update password dlm table betul mengikut emial, tapi tak isi data lagi
+                $query = "UPDATE $table_name SET $pwd_column = ? WHERE $email_column = ?";
+                $stmt = mysqli_prepare($conn, $query);
+
+                //isi password baru yang dah dihash and email user ke dalam query update yang dah disediakan 
+                if ($stmt) {
+                    mysqli_stmt_bind_param($stmt, "ss", $hashed_password, $email);
+                    
+                    //utkmessage update password ttu berjaya ke tak
+                    if (mysqli_stmt_execute($stmt)) {
+                        $message = "Password has been reset successfully for " . strtoupper(str_replace('_', ' ', $table_name)) . "!";
+                        $message_color = "green";
+                    } else {
+                        $message = "Failed to update password: " . mysqli_stmt_error($stmt);
+                    }
+                    mysqli_stmt_close($stmt);
+                } else {
+                    $message = "Database query error.";
+                }
+            }
+            //kalau email takde akan keluar error message
+            else {
+                $message = "Email address not found in our system!";
+            }
+>>>>>>> 2aa3c005aac2d3fdf1dba3b97705af4306d1ba23
         }
     }
 }
@@ -50,12 +155,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     box-sizing: border-box;
 }
 
-body {
+body 
+{
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
     height: 100vh; 
     width: 100vw;
     display: flex;
+    flex-direction: column; 
     align-items: center; 
     justify-content: center;
     overflow: hidden; 
@@ -107,31 +214,22 @@ body {
 }
 
 .instruction {
-    color: #555555; 
-    font-size: 14.5px;
+    color: #666666; 
+    font-size: 15px;
     text-align: center;
     margin-bottom: 25px;
-    font-weight: 500;
-    line-height: 1.4;
+    font-weight: normal;
 }
 
 .form-group {
     margin-bottom: 18px;
-    transition: all 0.4s ease;
-}
-
-#password-section {
-    display: none;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.4s ease;
 }
 
 .form-group label {
     display: block;
     font-size: 13.5px; 
     color: #2c2c2c;
-    margin-bottom: 6px; 
+    margin-bottom: 4px; 
     font-weight: bold;
     letter-spacing: 0.3px;
 }
@@ -163,7 +261,12 @@ body {
     box-shadow: 0 0 0 4px #f1e6ed; 
 }
 
-.btn-action {
+.form-group input::placeholder {
+    color: #94a3b8;
+    font-size: 13.5px;
+}
+
+.btn-reset {
     width: 100%;
     background-color: #710349;
     color: white;
@@ -181,10 +284,15 @@ body {
     transition: all 0.2s ease;
 }
 
-.btn-action:hover {
+.btn-reset:hover {
     background-color: #540236;
     box-shadow: #c69fb7 0px 6px 20px;
     transform: translateY(-1px);
+}
+
+.btn-reset:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px #c69fb7;
 }
 
 .login-link {
@@ -197,11 +305,23 @@ body {
     color: #710349;
     text-decoration: none;
     font-weight: bold;
+    transition: color 0.2s ease;
 }
 
 .login-link a:hover {
     color: #4a002a;
     text-decoration: underline;
+}
+
+.alert-message {
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    max-width: 580px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 @keyframes fadeInDown {
@@ -217,40 +337,59 @@ body {
 
 </head>
 <body>
+
+    <?php if (!empty($message)): ?>
+        <div class="alert-message" style="color: <?php echo $message_color; ?>; background-color: <?php echo $message_color == 'green' ? '#e6f4ea' : '#fce8e6'; ?>;">
+            <?php echo htmlspecialchars($message); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="container">
         <div class="logo-container">
-            <img src="images/wedding_logo.png" alt="Wedding Logo" class="logo">
+            <img src="wedding_logo.png" alt="Wedding Logo" class="logo">
         </div>
 
         <h2 class="title">Reset Password</h2>
 
         <div class="form-card">
-            <p id="instruction-text" class="instruction">Enter your registered email address to find your account.</p>
+            <p class="instruction">Please enter your email and choose a new password.</p>
 
-            <form id="resetForm" action="#" method="POST">
+            <form action="" method="POST">
                 
-                <div class="form-group" id="email-section">
+                <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="customer@gmail.com" required>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="Enter your registered email" 
+                        required>
                 </div>
 
-                <div id="password-section">
-                    <div class="form-group">
-                        <label for="new-password">New Password</label>
-                        <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
-                        <input 
-                            type="password" 
-                            id="new-password" 
-                            placeholder="Create a password">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="confirm-password">Confirm New Password</label>
-                        <input type="password" id="confirm-password" placeholder="Re-enter password">
-                    </div>
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
+                    <input 
+                        type="password" 
+                        id="new-password" 
+                        name="new_password" 
+                        placeholder="Enter New Password" 
+                        pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$"
+                        title="Password must be at least 6 characters long and include at least one uppercase letter, one lowercase letter, and one symbol."
+                        required>
                 </div>
 
-                <button type="submit" id="submit-btn" class="btn-action">Next</button>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm New Password</label>
+                    <input 
+                        type="password" 
+                        id="confirm-password" 
+                        name="confirm_password" 
+                        placeholder="Confirm Your New Password" 
+                        required>
+                </div>
+
+                <button type="submit" class="btn-reset">Reset Password</button>
 
                 <div class="login-link">
                     Already have an account? <a href="login.html">Login here</a>
@@ -258,6 +397,7 @@ body {
             </form>
         </div>
     </div>
+<<<<<<< HEAD
 
     <script>
     const resetForm = document.getElementById('resetForm');
@@ -325,5 +465,7 @@ body {
         }
     });
 </script>
+=======
+>>>>>>> 2aa3c005aac2d3fdf1dba3b97705af4306d1ba23
 </body>
 </html>

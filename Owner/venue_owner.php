@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 <?php include 'db_connection.php'; ?>
 
+=======
+>>>>>>> 2aa3c005aac2d3fdf1dba3b97705af4306d1ba23
 <!DOCTYPE html>
 <html lang="en">
 
