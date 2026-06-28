@@ -1,43 +1,37 @@
 <?php
-$servername = "127.0.0.1";
-$username = "root";
-$password = "";
-$dbname = "wedding_db";
-$port = 3307;
-$conn = new mysqli($servername, $username, $password, $dbname, $port);
+require_once 'db_connection.php';
 
-if ($conn->connect_error) {
-    die(json_encode(['status' => 'error', 'message' => 'Database connection failed.']));
-}
+header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
-    $email = $conn->real_escape_string($_POST['email']);
-    
-    if ($_POST['action'] === 'check_email') {
-        $sql = "SELECT client_id FROM client WHERE client_email = '$email'";
-        $result = $conn->query($sql);
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $action = $_POST['action'];
+
+    if ($action === 'check_email') {
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
         
-        if ($result->num_rows > 0) {
-            echo json_encode(['status' => 'success']);
+        // Semak jika e-mel wujud dalam DB
+        $sql = "SELECT id FROM users WHERE email = '$email'";
+        $result = mysqli_query($conn, $sql);
+
+        if (mysqli_num_rows($result) > 0) {
+            echo json_encode(['status' => 'success', 'message' => 'Account found.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'Alamat emel tidak dijumpai.']);
+            echo json_encode(['status' => 'error', 'message' => 'Email not registered.']);
         }
-        exit;
-    }
-    
-    if ($_POST['action'] === 'reset_password') {
+
+    } elseif ($action === 'update_password') {
+        $email = mysqli_real_escape_string($conn, $_POST['email']);
         $new_password = $_POST['new_password'];
         
         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        $sql = "UPDATE client SET client_password = '$hashed_password' WHERE client_email = '$email'";
+
+        $sql = "UPDATE users SET password = '$hashed_password' WHERE email = '$email'";
         
-        if ($conn->query($sql) === TRUE) {
-            echo json_encode(['status' => 'success']);
+        if (mysqli_query($conn, $sql)) {
+            echo json_encode(['status' => 'success', 'message' => 'Password successfully updated.']);
         } else {
-            echo json_encode(['status' => 'error', 'message' => 'Ralat pangkalan data. Sila cuba lagi.']);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to update password.']);
         }
-        exit;
     }
 }
 ?>
@@ -266,72 +260,70 @@ body {
     </div>
 
     <script>
-        const resetForm = document.getElementById('resetForm');
-        const emailSection = document.getElementById('email-section');
-        const passwordSection = document.getElementById('password-section');
-        const submitBtn = document.getElementById('submit-btn');
-        const instructionText = document.getElementById('instruction-text');
+    const resetForm = document.getElementById('resetForm');
+    const emailSection = document.getElementById('email-section');
+    const passwordSection = document.getElementById('password-section');
+    const submitBtn = document.getElementById('submit-btn');
+    const instructionText = document.getElementById('instruction-text');
+    
+    let currentStep = 1;
+
+    resetForm.addEventListener('submit', function(event) {
+        event.preventDefault();
         
-        let currentStep = 1;
+        const formData = new FormData(resetForm);
 
-        resetForm.addEventListener('submit', function(event) {
-            event.preventDefault();
+        if (currentStep === 1) {
+            formData.append('action', 'check_email');
             
-            const email = document.getElementById('email').value;
+            fetch('reset_password.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    emailSection.style.display = 'none';
+                    passwordSection.style.display = 'block';
+                    instructionText.innerHTML = '<span style="color: #710349; font-weight: bold;">Account found.</span> Please enter your new password.';
+                    
+                    setTimeout(() => {
+                        passwordSection.style.opacity = '1';
+                        passwordSection.style.transform = 'translateY(0)';
+                    }, 50);
 
-            if (currentStep === 1) {
-                fetch('', {
+                    document.getElementById('new-password').required = true;
+                    document.getElementById('confirm-password').required = true;
+                    submitBtn.innerText = 'Reset Password';
+                    currentStep = 2;
+                } else {
+                    alert(data.message);
+                }
+            });
+
+        } else if (currentStep === 2) {
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                alert('Passwords do not match!');
+            } else {
+                formData.append('action', 'update_password');
+                
+                fetch('reset_password.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: 'action=check_email&email=' + encodeURIComponent(email)
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
+                    alert(data.message);
                     if (data.status === 'success') {
-                        emailSection.style.display = 'none';
-                        passwordSection.style.display = 'block';
-                        
-                        instructionText.innerHTML = '<span style="color: #710349; font-weight: bold;">Account found.</span> Please enter your new password.';
-                        
-                        setTimeout(() => {
-                            passwordSection.style.opacity = '1';
-                            passwordSection.style.transform = 'translateY(0)';
-                        }, 50);
-
-                        document.getElementById('new-password').required = true;
-                        document.getElementById('confirm-password').required = true;
-
-                        submitBtn.innerText = 'Reset Password';
-                        currentStep = 2;
-                    } else {
-                        alert(data.message);
+                        window.location.href = 'login.html';
                     }
                 });
-
-            } else if (currentStep === 2) {
-                const newPassword = document.getElementById('new-password').value;
-                const confirmPassword = document.getElementById('confirm-password').value;
-
-                if (newPassword !== confirmPassword) {
-                    alert('Passwords do not match! Please check again.');
-                } else {
-                    fetch('', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: 'action=reset_password&email=' + encodeURIComponent(email) + '&new_password=' + encodeURIComponent(newPassword)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            alert('Password has been successfully updated!');
-                            window.location.href = 'login.html';
-                        } else {
-                            alert(data.message);
-                        }
-                    });
-                }
             }
-        });
-    </script>
+        }
+    });
+</script>
 </body>
 </html>

@@ -1,1097 +1,1096 @@
-<?php
-session_start();
-
-// utk check if user tu dah login as onwer ke tak
-if (!isset($_SESSION['owner_id'])) {
-    header("Location: login.html");
-    exit();
-}
-
-// amik data dari login
-$owner_id = $_SESSION['owner_id'];
-$owner_name = isset($_SESSION['owner_name']) ? $_SESSION['owner_name'] : "Venue Owner";
-
-// utk connectkan database dengan php
-$conn = mysqli_connect("localhost:3307", "root", "", "wedding_db");
-
-//kalau tak keluar error
-if (!$conn) {
-    die("Database Connection Failed: " . mysqli_connect_error());
-}
-
-// utk pastikan tak keluar any tulisan pelik
-mysqli_set_charset($conn, "utf8mb4");
-
-// utk message and status kalau berjaya
-$message = "";
-$status = "success";
-
-
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
-    
-    // utk check kalau user tekan add venue, lepastu ambik semua data venue dari form
-    if ($_POST['action'] == 'add_venue') {
-        $v_name = mysqli_real_escape_string($conn, $_POST['v_name']);
-        $v_area = mysqli_real_escape_string($conn, $_POST['v_area']);
-        $v_address = mysqli_real_escape_string($conn, $_POST['v_address']);
-        $v_capacity = intval($_POST['v_capacity']);
-        $v_desc = mysqli_real_escape_string($conn, $_POST['v_desc']);
-
-        //untuk masukkan data venue baru ke dalam database
-        $query = "INSERT INTO venue (venue_name, venue_area, venue_address, venue_capacity, venue_description, owner_id) VALUES (?, ?, ?, ?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $query);
-
-        //utk isi data venue dalam database lepastu jalankan query, then check berjaya ke tak
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "sssisi", $v_name, $v_area, $v_address, $v_capacity, $v_desc, $owner_id);
-            if (mysqli_stmt_execute($stmt)) {
-                $message = "Venue Added Successfully!";
-            } else {
-                $message = "Error adding venue: " . mysqli_error($conn);
-                $status = "error";
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-
-    // utk check kalau user tekan add package, lepastu ambik semua data package dari form
-    if ($_POST['action'] == 'add_package') {
-        $venue_id = intval($_POST['p_venue_id']);
-        $p_name = mysqli_real_escape_string($conn, $_POST['p_name']);
-        $p_price = floatval(str_replace(',', '', $_POST['p_price']));
-        $p_inclusions = mysqli_real_escape_string($conn, $_POST['p_inclusions']);
-
-        //untuk masukkan data venue baru ke dalam database
-        $query = "INSERT INTO package (venue_id, package_name, package_price, package_inclusion) VALUES (?, ?, ?, ?)";
-        $stmt = mysqli_prepare($conn, $query);
-
-        //utk isi data package dalam database lepastu jalankan query, then check berjaya ke tak
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "isds", $venue_id, $p_name, $p_price, $p_inclusions);
-            if (mysqli_stmt_execute($stmt)) {
-                $message = "Package Added Successfully!";
-            } else {
-                $message = "Error adding package: " . mysqli_error($conn);
-                $status = "error";
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-
-    // utk check kalau user nak padam venue, pastu ambik id venue yang nak dipadam
-    if ($_POST['action'] == 'delete_venue') {
-        $id_to_delete = intval($_POST['delete_id']);
-
-        // utk pastikan venue tu betul-betul milik owner yang sdg active
-        $query = "DELETE FROM venue WHERE venue_id = ? AND owner_id = ?";
-        $stmt = mysqli_prepare($conn, $query);
-
-        //utk padam venue yang dipilih, lepastu check berjaya atau tak, paparkan mesej
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "ii", $id_to_delete, $owner_id);
-            if (mysqli_stmt_execute($stmt)) {
-                $message = "Venue Deleted Successfully!";
-            } else {
-                $message = "Error deleting venue.";
-                $status = "error";
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-
-    // utk check kalau user nak padam package, lepastu ambil id package yang nak dipadam
-    if ($_POST['action'] == 'delete_package') {
-        $id_to_delete = intval($_POST['delete_id']);
-        
-        // utk pastikan venue tu betul-betul milik owner yang sdg active
-        $query = "DELETE FROM package WHERE package_id = ? AND venue_id IN (SELECT venue_id FROM venue WHERE owner_id = ?)";
-        $stmt = mysqli_prepare($conn, $query);
-
-        // utk padam package yang dipilih, lepastu check berjaya atau tak, paparkan mesej
-        if ($stmt) {
-            mysqli_stmt_bind_param($stmt, "ii", $id_to_delete, $owner_id);
-            if (mysqli_stmt_execute($stmt)) {
-                $message = "Package Deleted Successfully!";
-            } else {
-                $message = "Error deleting package.";
-                $status = "error";
-            }
-            mysqli_stmt_close($stmt);
-        }
-    }
-}
-
-//Sistem ambil semua venue milik owner and sediakan senarai kosong untuk simpan data 
-$venues_result = mysqli_query($conn, "SELECT * FROM venue WHERE owner_id = $owner_id");
-$venues_list = [];
-
-// system ambik semua venue satu-satu dari database dan simpan dalam array
-while ($row = mysqli_fetch_assoc($venues_result)) {
-    $venues_list[] = $row;
-}
-
-// ambil semua package yang milik venue owner, sekali dengan nama venue
-$packages_query = "SELECT p.*, v.venue_name FROM package p 
-                   JOIN venue v ON p.venue_id = v.venue_id 
-                   WHERE v.owner_id = $owner_id";
-$packages_result = mysqli_query($conn, $packages_query);
-
-// ambil senarai booking untuk owner, gabungkan sekali venue, package dan client
-$bookings_query = "SELECT b.*, v.venue_name, p.package_name, c.client_name 
-                   FROM booking b
-                   JOIN venue v ON b.venue_id = v.venue_id
-                   JOIN package p ON b.package_id = p.package_id
-                   JOIN client c ON b.client_id = c.client_id
-                   WHERE v.owner_id = $owner_id";
-$bookings_result = mysqli_query($conn, $bookings_query);
-
-// kira jumlah venue dan package untuk owner
-$count_venues = count($venues_list);
-$count_packages = mysqli_num_rows($packages_result);
-
-//set awal kiraan booking kepada kosong
-$count_pending = 0;
-$count_confirmed = 0;
-
-//kira berapa booking yang pending dan berapa yang confirmed
-if ($bookings_result) {
-    while ($b_row = mysqli_fetch_assoc($bookings_result)) {
-        if (strtolower($b_row['booking_status']) == 'pending') $count_pending++;
-        if (strtolower($b_row['booking_status']) == 'confirmed') $count_confirmed++;
-    }
-    // reset balik pointer dalam result booking balik ke 1st line
-    mysqli_data_seek($bookings_result, 0);
-}
-?>
+<?php include 'db_connection.php'; ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Venue Owner Panel</title>
 
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-body {
-    background-color: #f4f5f7;
-    color: #2d3748;
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-}
-
-.container {
-    width: 100%;
-    padding-bottom: 60px;
-}
-
-.header {
-    background-color: #ffffff;
-    padding: 24px 5%;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px; 
-}
-
-.logo-area {
-    font-size: 24px;
-    font-weight: 700;
-    color: #4a042e;
-    letter-spacing: -0.5px;
-}
-
-.nav-links {
-    display: flex;
-    justify-content: center;
-    gap: 25px;
-}
-
-.nav-links a {
-    text-decoration: none;
-    color: #718096;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 8px 4px;
-    transition: color 0.2s ease, border-color 0.2s ease;
-    border-bottom: 2px solid transparent;
-}
-
-.nav-links a:hover {
-    color: #710349;
-}
-
-.nav-links a.active {
-    color: #710349;
-    border-bottom: 2px solid #710349;
-}
-
-.nav-links a.logout {
-    color: #e53e3e;
-}
-
-.nav-links a.logout:hover {
-    color: #c53030;
-}
-
-.welcome-banner {
-    background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
-    color: white;
-    margin: 40px auto 25px auto;
-    padding: 40px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 1200px;
-    box-shadow: 0 4px 20px #e7cfde; 
-    text-align: center;
-}
-
-.welcome-banner h2 {
-    font-size: 26px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-}
-
-.welcome-banner p {
-    font-size: 15px;
-    color: #f7fafc;
-    opacity: 0.85;
-}
-
-.stats-container {
-    display: flex;
-    justify-content: space-between;
-    gap: 20px;
-    margin: 0 auto 30px auto;
-    width: 90%;
-    max-width: 1200px;
-}
-
-.stat-card {
-    background-color: white;
-    color: #1a202c;
-    padding: 24px;
-    border-radius: 14px;
-    text-align: left;
-    flex: 1;
-    font-weight: 600;
-    font-size: 16px;
-    box-shadow: 0 4px 6px -1px #f0f0f2, 0 2px 4px -1px #f5f5f6; 
-    border: 1px solid #edf2f7;
-    position: relative;
-    overflow: hidden;
-}
-
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background-color: #710349;
-}
-
-.content-section {
-    background-color: #ffffff;
-    color: #2d3748;
-    margin: 0 auto;
-    padding: 35px;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 1200px;
-    position: relative;
-    min-height: 320px;
-    display: none; 
-    box-shadow: 0 4px 6px -1px #f0f0f2; 
-    border: 1px solid #edf2f7;
-}
-
-.content-section.active-section {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.section-header h3 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #1a202c;
-}
-
-.btn-add {
-    background-color: #710349;
-    color: #ffffff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 14px;
-    transition: background 0.2s ease;
-}
-
-.btn-add:hover {
-    background-color: #520235;
-}
-
-.btn-edit {
-    background-color: #f7fafc;
-    color: #4a5568;
-    border: 1px solid #e2e8f0;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    margin-right: 5px;
-    transition: all 0.2s ease;
-}
-
-.btn-edit:hover {
-    background-color: #edf2f7;
-    color: #1a202c;
-}
-
-.btn-delete {
-    background-color: #fff5f5;
-    color: #e53e3e;
-    border: 1px solid #fed7d7;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.2s ease;
-}
-
-.btn-delete:hover {
-    background-color: #e53e3e;
-    color: white;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-    font-size: 15px;
-}
-
-th, td {
-    padding: 16px 18px;
-    border-bottom: 1px solid #edf2f7;
-}
-
-th {
-    font-weight: 600;
-    color: #718096;
-    background-color: #f7fafc;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-td {
-    color: #4a5568;
-}
-
-tr:hover td {
-    background-color: #fcfcfd;
-}
-
-td:last-child {
-    white-space: nowrap;
-}
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(51, 47, 50, 0.4);
-    backdrop-filter: blur(4px);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    display: none;
-}
-
-.modal-box-add, .modal-box-delete {
-    background-color: #ffffff;
-    width: 90%;
-    border-radius: 16px;
-    padding: 35px;
-    color: #1a202c; 
-    border: 1px solid #e2e8f0;
-    animation: fadeIn 0.4s ease-out;
-}
-
-.modal-box-add { max-width: 580px; }
-.modal-box-delete { max-width: 440px; text-align: center; }
-
-.modal-box-logout {
-    background-color: #ffffff;
-    width: 90%;
-    max-width: 420px;
-    border-radius: 16px;
-    padding: 35px;
-    text-align: center;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    animation: fadeIn 0.4s ease-out;
-}
-
-.modal-box-logout p {
-    font-size: 15px;
-    color: #4a5568;
-    line-height: 1.5;
-    margin-bottom: 25px;
-}
-
-.btn-logout-confirm {
-    background-color: #e53e3e;
-    color: #ffffff;
-    border: none;
-    padding: 11px 24px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-logout-confirm:hover {
-    background-color: #c53030;
-}
-
-@keyframes fadeIn {
-    from { 
-        opacity: 0; 
-        transform: translateY(8px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0); 
-    }
-}
-
-.modal-box-add h3 {
-    text-align: center;
-    font-size: 20px;
-    margin-bottom: 25px;
-    font-weight: 600;
-    color: #1a202c;
-}
-
-.form-group {
-    margin-bottom: 20px;
-}
-
-.form-group label {
-    display: block;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #4a5568;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 11px 14px;
-    border: 1px solid #cbd5e0;
-    border-radius: 8px;
-    font-size: 14px;
-    background-color: #fff;
-    color: #2d3748;
-    transition: all 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #710349;
-    box-shadow: 0 0 0 3px #ebd5e4; 
-}
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 30px;
-}
-
-.btn-submit {
-    background-color: #710349;
-    color: white;
-    border: none;
-    padding: 11px 28px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-submit:hover {
-    background-color: #520235;
-}
-
-.btn-cancel {
-    background-color: #ffffff;
-    color: #4a5568;
-    border: 1px solid #cbd5e0;
-    padding: 11px 28px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-cancel:hover {
-    background-color: #f7fafc;
-    color: #1a202c;
-}
-
-.modal-box-delete p {
-    font-size: 16px;
-    color: #4a5568;
-    margin-bottom: 25px;
-}
-
-.btn-confirm-ok {
-    background-color: #e53e3e;
-    color: #ffffff;
-    border: none;
-    padding: 11px 28px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-}
-
-.btn-confirm-ok:hover {
-    background-color: #c53030;
-}
-
-.toast-notification {
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    background-color: #2f855a;
-    color: white;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    z-index: 1010;
-    box-shadow: 0 10px 15px -3px #e2e8f0; 
-    
-    visibility: hidden;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.toast-notification.show-toast {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-}
-</style>
-</head>
-<body>
-
-<div class="container">
-    <div class="header">
-        <div class="logo-area">🌸 Wedding Hall Management - Owner Panel</div>
-        <div class="nav-links">
-            <a onclick="switchTab('venues')" id="tab-venues" class="active">Venues</a>
-            <a onclick="switchTab('packages')" id="tab-packages">Packages</a>
-            <a onclick="switchTab('bookings')" id="tab-bookings">Bookings</a>
-            <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
-        </div>
-    </div>
-
-    <div class="welcome-banner">
-        <h2>Welcome, Venue Owner! 🏢</h2>
-        <p>Manage your venues, packages, and view booking requests seamlessly.</p>
-    </div>
-
-    <div class="stats-container">
-        <div class="stat-card" id="count-venues">2 Venues</div>
-        <div class="stat-card" id="count-packages">2 Packages</div>
-        <div class="stat-card" id="count-pending">0 Pending Bookings</div>
-        <div class="stat-card" id="count-confirmed">2 Confirmed Bookings</div>
-    </div>
-
-    <div id="section-venues" class="content-section active-section">
-        <div class="section-header">
-            <h3>Venues</h3>
-            <button class="btn-add" onclick="openModal('modal-add-venue')">+ Add New Venue</button>
-        </div>
-        <table id="table-venues">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Area</th>
-                    <th>Capacity</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>Teluk Mas</td>
-                    <td>700</td>
-                    <td>
-                        <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Dahlia Wedding Hall</td>
-                    <td>Alor Gajah</td>
-                    <td>1,000</td>
-                    <td>
-                        <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="section-packages" class="content-section">
-        <div class="section-header">
-            <h3>Packages</h3>
-            <button class="btn-add" onclick="openModal('modal-add-package')">+ Add New Package</button>
-        </div>
-        <table id="table-packages">
-            <thead>
-                <tr>
-                    <th>Venue</th>
-                    <th>Package Name</th>
-                    <th>Price (RM)</th>
-                    <th>Inclusions</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>Basic Package</td>
-                    <td>12,000</td>
-                    <td>Nasi, ayam, daging, sayur, buah, air</td>
-                    <td>
-                        <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Dahlia Wedding Hall</td>
-                    <td>Silver Package</td>
-                    <td>15,000</td>
-                    <td>Basic + udang, kuih, sate</td>
-                    <td>
-                        <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                        <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="section-bookings" class="content-section">
-        <div class="section-header">
-            <h3>Booking Requests</h3>
-        </div>
-        <table id="table-bookings">
-            <thead>
-                <tr>
-                    <th>Client Name</th>
-                    <th>Venue</th>
-                    <th>Event Date</th>
-                    <th>Package</th>
-                    <th>Guests</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Mariah binti Ali</td>
-                    <td>Dewan Serbaguna Teluk Mas</td>
-                    <td>2025-10-16</td>
-                    <td>Basic Package</td>
-                    <td>500</td>
-                    <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
-                </tr>
-                <tr>
-                    <td>Aina binti Malik</td>
-                    <td>Dahlia Wedding Hall</td>
-                    <td>2025-08-09</td>
-                    <td>Silver Package</td>
-                    <td>800</td>
-                    <td style="color: #2f855a; font-weight: 600;">Confirmed</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="toast-notification" id="toast-global"></div>
-
-<div id="modal-add-venue" class="modal-overlay">
-    <div class="modal-box-add">
-        <h3>Add New Venue</h3>
-        <form id="form-add-venue">
-            <div class="form-group">
-                <label>Venue Name</label>
-                <input type="text" id="v-name" required>
-            </div>
-            <div class="form-group">
-                <label>Location Area</label>
-                <input type="text" id="v-area" placeholder="e.g., Teluk Mas, Alor Gajah" required>
-            </div>
-            <div class="form-group">
-                <label>Full Address</label>
-                <input type="text" id="v-address">
-            </div>
-            <div class="form-group">
-                <label>Capacity</label>
-                <input type="text" id="v-capacity" required>
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <input type="text" id="v-desc">
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal('modal-add-venue')">Cancel</button>
-                <button type="button" class="btn-submit" onclick="addNewVenue()">Save Venue</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modal-edit-venue" class="modal-overlay">
-    <div class="modal-box-add">
-        <h3>Edit Venue</h3>
-        <form>
-            <div class="form-group">
-                <label>Venue Name</label>
-                <input type="text" value="Dewan Serbaguna Teluk Mas">
-            </div>
-            <div class="form-group">
-                <label>Location Area</label>
-                <input type="text" value="Teluk Mas">
-            </div>
-            <div class="form-group">
-                <label>Full Address</label>
-                <input type="text" value="Melaka">
-            </div>
-            <div class="form-group">
-                <label>Capacity</label>
-                <input type="text" value="700">
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <input type="text" value="Dewan ini sangat cantik.">
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-venue')">Cancel</button>
-                <button type="button" class="btn-submit" onclick="submitForm('modal-edit-venue', 'Venue Edit Successfully!')">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modal-add-package" class="modal-overlay">
-    <div class="modal-box-add">
-        <h3>Add New Package</h3>
-        <form id="form-add-package">
-            <div class="form-group">
-                <label>Select Venue</label>
-                <select id="p-venue" required>
-                    <option value="" disabled selected>Choose venue</option>
-                    <option value="Dewan Serbaguna Teluk Mas">Dewan Serbaguna Teluk Mas</option>
-                    <option value="Dahlia Wedding Hall">Dahlia Wedding Hall</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Package Name</label>
-                <input type="text" id="p-name" placeholder="e.g., Basic, Silver, Gold" required>
-            </div>
-            <div class="form-group">
-                <label>Price (RM)</label>
-                <input type="text" id="p-price" required>
-            </div>
-            <div class="form-group">
-                <label>Inclusions</label>
-                <textarea id="p-inclusions" style="height: 80px; resize: none;" placeholder="e.g., nasi, ayam, air, etc"></textarea>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal('modal-add-package')">Cancel</button>
-                <button type="button" class="btn-submit" onclick="addNewPackage()">Save Package</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modal-edit-package" class="modal-overlay">
-    <div class="modal-box-add">
-        <h3>Edit Package</h3>
-        <form>
-            <div class="form-group">
-                <label>Select Venue</label>
-                <select>
-                    <option selected>Dewan Serbaguna Teluk Mas</option>
-                    <option>Dahlia Wedding Hall</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Package Name</label>
-                <input type="text" value="Basic Package">
-            </div>
-            <div class="form-group">
-                <label>Price (RM)</label>
-                <input type="text" value="12,000">
-            </div>
-            <div class="form-group">
-                <label>Inclusions</label>
-                <textarea style="height: 80px; resize: none;">Nasi, ayam, daging, sayur, buah, air</textarea>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-package')">Cancel</button>
-                <button type="button" class="btn-submit" onclick="submitForm('modal-edit-package', 'Package Edit Successfully!')">Save Changes</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div id="modal-delete-confirmation" class="modal-overlay">
-    <div class="modal-box-delete">
-        <p id="delete-prompt-text">Are you sure you want to delete this?</p>
-        <div class="form-actions" style="justify-content: center; margin-top: 0;">
-            <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-delete-confirmation')">Cancel</button>
-            <button type="button" class="btn-confirm-ok" id="btn-confirm-delete-action">Delete</button>
-        </div>
-    </div>
-</div>
-
-<div id="modal-logout-confirmation" class="modal-overlay">
-    <div class="modal-box-logout">
-        <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
-        <div class="form-actions" style="justify-content: center; margin-top: 0; gap: 15px;">
-            <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-logout-confirmation')">Cancel</button>
-            <button type="button" class="btn-logout-confirm" onclick="executeLogout()">Log Out</button>
-        </div>
-    </div>
-</div>
-
-<script>
-
-    // untuk save data yg nk di delete dulu sebelum kene padam
-    let rowToDelete = null; 
-
-    // untuk bagi dia automatic bila page dah siap load
-    window.onload = function() {
-        updateStats();
-    };
-
-    //untuk tukar tabe setiap page
-    function switchTab(tabName) {
-        const sections = document.querySelectorAll('.content-section');
-        sections.forEach(section => section.classList.remove('active-section'));
-
-        const links = document.querySelectorAll('.nav-links a');
-        links.forEach(link => link.classList.remove('active'));
-
-        document.getElementById('section-' + tabName).classList.add('active-section');
-        document.getElementById('tab-' + tabName).classList.add('active');
-    }
-
-    //untuk confirmation bila tekan button delete
-    function openModal(modalId, type = '', buttonElement = null) {
-        document.getElementById(modalId).style.display = 'flex';
-        
-        if (modalId === 'modal-delete-confirmation') {
-            rowToDelete = buttonElement.closest('tr'); 
-            const promptText = document.getElementById('delete-prompt-text');
-            const confirmBtn = document.getElementById('btn-confirm-delete-action');
-            
-            if (type === 'venue') {
-                promptText.textContent = "Are you sure you want to delete this venue? This action cannot be undone.";
-                confirmBtn.setAttribute('onclick', "confirmDelete('Venue Deleted Successfully!')");
-            } else if (type === 'package') {
-                promptText.textContent = "Are you sure you want to delete this package? This action cannot be undone.";
-                confirmBtn.setAttribute('onclick', "confirmDelete('Package Deleted Successfully!')");
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #f4f5f7;
+            color: #2d3748;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            padding-bottom: 60px;
+        }
+
+        .header {
+            background-color: #ffffff;
+            padding: 24px 5%;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-area {
+            font-size: 24px;
+            font-weight: 700;
+            color: #4a042e;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #718096;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 8px 4px;
+            transition: color 0.2s ease, border-color 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-links a:hover {
+            color: #710349;
+        }
+
+        .nav-links a.active {
+            color: #710349;
+            border-bottom: 2px solid #710349;
+        }
+
+        .nav-links a.logout {
+            color: #e53e3e;
+        }
+
+        .nav-links a.logout:hover {
+            color: #c53030;
+        }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
+            color: white;
+            margin: 40px auto 25px auto;
+            padding: 40px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            box-shadow: 0 4px 20px #e7cfde;
+            text-align: center;
+        }
+
+        .welcome-banner h2 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .welcome-banner p {
+            font-size: 15px;
+            color: #f7fafc;
+            opacity: 0.85;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin: 0 auto 30px auto;
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        .stat-card {
+            background-color: white;
+            color: #1a202c;
+            padding: 24px;
+            border-radius: 14px;
+            text-align: left;
+            flex: 1;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 6px -1px #f0f0f2, 0 2px 4px -1px #f5f5f6;
+            border: 1px solid #edf2f7;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: #710349;
+        }
+
+        .content-section {
+            background-color: #ffffff;
+            color: #2d3748;
+            margin: 0 auto;
+            padding: 35px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 1200px;
+            position: relative;
+            min-height: 320px;
+            display: none;
+            box-shadow: 0 4px 6px -1px #f0f0f2;
+            border: 1px solid #edf2f7;
+        }
+
+        .content-section.active-section {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
-    }
 
-    // untuk ttp popup window
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-
-    //untuk logout, lepastu akan terus ke login page
-    function executeLogout() {
-        window.location.href = 'login.html'; 
-    }
-
-    //ambik data yg diisi dalam form "add new venue" and utk check form supaya semua field tu diissi 
-    function addNewVenue() {
-        const name = document.getElementById('v-name').value;
-        const area = document.getElementById('v-area').value;
-        const capacity = document.getElementById('v-capacity').value;
-
-        if(name === '' || area === '' || capacity === '') {
-            alert('Please fill in Name, Area, and Capacity!');
-            return;
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #edf2f7;
         }
 
-        // utk tmbh venue baru dalam table, dropdown, etc lepastu bagi mesaage
-        const tbody = document.querySelector('#table-venues tbody');
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
+        .section-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .btn-add {
+            background-color: #710349;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+
+        .btn-add:hover {
+            background-color: #520235;
+        }
+
+        .btn-edit {
+            background-color: #f7fafc;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-right: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-edit:hover {
+            background-color: #edf2f7;
+            color: #1a202c;
+        }
+
+        .btn-delete {
+            background-color: #fff5f5;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-delete:hover {
+            background-color: #e53e3e;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 15px;
+        }
+
+        th,
+        td {
+            padding: 16px 18px;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .inclusions-cell {
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+
+        th {
+            font-weight: 600;
+            color: #718096;
+            background-color: #f7fafc;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            color: #4a5568;
+        }
+
+        tr:hover td {
+            background-color: #fcfcfd;
+        }
+
+        td:last-child {
+            white-space: nowrap;
+        }
+
+        .select-status {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #cbd5e0;
+            background-color: #fff;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(51, 47, 50, 0.4);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-box-add,
+        .modal-box-delete {
+            background-color: #ffffff;
+            width: 90%;
+            border-radius: 16px;
+            padding: 35px;
+            color: #1a202c;
+            border: 1px solid #e2e8f0;
+            animation: fadeIn 0.4s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-box-add {
+            max-width: 580px;
+        }
+
+        .modal-box-delete {
+            max-width: 440px;
+            text-align: center;
+        }
+
+        .modal-box-logout {
+            background-color: #ffffff;
+            width: 90%;
+            max-width: 420px;
+            border-radius: 16px;
+            padding: 35px;
+            text-align: center;
+            box-shadow: 0 10px 25 rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .modal-box-logout p {
+            font-size: 15px;
+            color: #4a5568;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+
+        .btn-logout-confirm {
+            background-color: #e53e3e;
+            color: #ffffff;
+            border: none;
+            padding: 11px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-logout-confirm:hover {
+            background-color: #c53030;
+        }
+
+        .modal-box-add h3 {
+            text-align: center;
+            font-size: 20px;
+            margin-bottom: 25px;
+            font-weight: 600;
+            color: #1a202c;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #fff;
+            color: #2d3748;
+            transition: all 0.2s ease;
+        }
+
+        .form-group input[type="file"] {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"]::file-selector-button {
+            background-color: #710349;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+            margin-right: 10px;
+            transition: background 0.2s ease;
+            cursor: pointer;
+        }
+
+        .form-group input[type="file"]::file-selector-button:hover {
+            background-color: #520235;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #710349;
+            box-shadow: 0 0 0 3px #ebd5e4;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn-submit {
+            background-color: #710349;
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #520235;
+        }
+
+        .btn-cancel {
+            background-color: #ffffff;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+            padding: 11px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel:hover {
+            background-color: #f7fafc;
+            color: #1a202c;
+        }
+
+        .btn-confirm-ok {
+            background-color: #e53e3e;
+            color: #ffffff;
+            border: none;
+            padding: 11px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-confirm-ok:hover {
+            background-color: #c53030;
+        }
+
+        .toast-notification {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background-color: #2f855a;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1010;
+            box-shadow: 0 10px 15px -3px #e2e8f0;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toast-notification.show-toast {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .modal-box-view-image {
+            background-color: #ffffff;
+            width: 90%;
+            max-width: 650px;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.4s ease-out;
+            position: relative;
+        }
+
+        .modal-box-view-image img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            object-fit: contain;
+            margin-bottom: 15px;
+        }
+
+        .image-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #710349;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+
+        .prev-btn {
+            left: 10px;
+        }
+
+        .next-btn {
+            right: 10px;
+        }
+
+        .btn-close-image {
+            background-color: #710349;
+            color: #ffffff;
+            border: none;
+            padding: 11px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .btn-close-image:hover {
+            background-color: #520235;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo-area">🌸 Wedding Hall Management - Owner Panel</div>
+            <div class="nav-links">
+                <a onclick="switchTab('venues')" id="tab-venues" class="active">Venues</a>
+                <a onclick="switchTab('packages')" id="tab-packages">Packages</a>
+                <a onclick="switchTab('bookings')" id="tab-bookings">Bookings</a>
+                <a class="logout" onclick="openModal('modal-logout-confirmation')">Log out</a>
+            </div>
+        </div>
+
+        <div class="welcome-banner">
+            <h2>Welcome, Venue Owner! 🏢</h2>
+            <p>Manage your venues, packages, and view booking requests seamlessly.</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card" id="count-pending">0 Pending Bookings</div>
+            <div class="stat-card" id="count-confirmed">0 Confirmed Bookings</div>
+            <div class="stat-card" id="count-completed">0 Completed Bookings</div>
+            <div class="stat-card" id="count-cancelled">0 Cancelled Bookings</div>
+        </div>
+
+        <div id="section-venues" class="content-section active-section">
+            <div class="section-header">
+                <h3>Venues</h3>
+                <button class="btn-add" onclick="openModal('modal-add-venue')">+ Add New Venue</button>
+            </div>
+            <table id="table-venues">
+                <thead>
+                    <tr>
+                        <th>Owner Name</th>
+                        <th>Venue Name</th>
+                        <th>Full Address</th>
+                        <th>Capacity</th>
+                        <th>Venue Images</th>
+                        <th>SSM Number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ahmad Bin Abu</td>
+                        <td>Dewan Serbaguna Telok Mas</td>
+                        <td>No 12, Jalan Hang Tuah, Telok Mas, Melaka</td>
+                        <td>700</td>
+                        <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue.jpg', 'images/pelamin.jpg'], 'Dewan Serbaguna Telok Mas')">View</button></td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                    </tr>
+                    <tr>
+                        <td>Ahmad Bin Abu</td>
+                        <td>Dahlia Wedding Hall</td>
+                        <td>KM 25, Jalan Simpang Ampat, Alor Gajah, Melaka</td>
+                        <td>1,000</td>
+                        <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue1.jpg', 'images/pelamin1.jpg'], 'Dahlia Wedding Hall')">View</button></td>
+                        <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">202301023456-A</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="section-packages" class="content-section">
+            <div class="section-header">
+                <h3>Packages</h3>
+                <button class="btn-add" onclick="openModal('modal-add-package')">+ Add New Package</button>
+            </div>
+            <table id="table-packages">
+                <thead>
+                    <tr>
+                        <th>Venue Name</th>
+                        <th>Package Name</th>
+                        <th>Price (RM)</th>
+                        <th>Package Inclusions</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Dewan Serbaguna Telok Mas</td>
+                        <td>Basic Package</td>
+                        <td>12,000</td>
+                        <td class="inclusions-cell">- Standard pelamin setup
+                            - Standard backdrop setup
+                            - Simple floral decoration
+                            - 1 nasi (Nasi putih)
+                            - 2 lauk (Ayam masak merah + Daging masak hitam)
+                            - 1 sayur (Campur)
+                            - 1 buah (Tembikai)
+                            - 1 air (Sirap)</td>
+                        <td>
+                            <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Dahlia Wedding Hall</td>
+                        <td>Silver Package</td>
+                        <td>15,000</td>
+                        <td class="inclusions-cell">- Pelamin setup with floral design
+                            - Upgraded backdrop design (Fabric drapping)
+                            - Medium floral decoration
+                            - 3 nasi (Nasi putih)
+                            - 2 lauk (Ayam masak merah + Daging masak hitam)
+                            - 1 sayur (Campur)
+                            - 2 buah (Tembikai + Oren)
+                            - 2 air (Sirap + Oren)
+                            - 1 dessert (Kek Brownies)</td>
+                        <td>
+                            <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="section-bookings" class="content-section">
+            <div class="section-header">
+                <h3>Booking Requests</h3>
+            </div>
+            <table id="table-bookings">
+                <thead>
+                    <tr>
+                        <th>CLIENT NAME</th>
+                        <th>EVENT DATE</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $sql = "SELECT b.booking_id, b.event_date, b.bookingstatus, c.client_name 
+            FROM booking b 
+            JOIN client c ON b.client_id = c.client_id";
+                    $result = $conn->query($sql);
+
+                    if ($result->num_rows > 0) {
+                        while ($row = $result->fetch_assoc()) {
+                            echo "<tr>";
+                            echo "<td>" . htmlspecialchars($row['client_name']) . "</td>";
+                            echo "<td>" . htmlspecialchars($row['event_date']) . "</td>";
+                            echo "<td>
+                    <form action='update_booking.php' method='POST' style='display:inline;'>
+                        <input type='hidden' name='booking_id' value='" . $row['booking_id'] . "'>
+                        <select name='status' onchange='this.form.submit()' style='padding: 5px; border-radius: 4px;'>
+                            <option value='Pending' " . ($row['bookingstatus'] == 'Pending' ? 'selected' : '') . ">Pending</option>
+                            <option value='Confirmed' " . ($row['bookingstatus'] == 'Confirmed' ? 'selected' : '') . ">Confirmed</option>
+                            <option value='Cancelled' " . ($row['bookingstatus'] == 'Cancelled' ? 'selected' : '') . ">Cancelled</option>
+                        </select>
+                    </form>
+                    </td>";
+                            echo "</tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='3' style='text-align:center;'>Tiada tempahan buat masa ini.</td></tr>";
+                    }
+                    ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="toast-notification" id="toast-global"></div>
+
+    <div id="modal-view-image" class="modal-overlay">
+        <div class="modal-box-view-image">
+            <h3 id="gallery-title" style="margin-bottom: 15px; font-weight: 600; color: #1a202c;">SSM Certificate View</h3>
+            <button class="image-nav-btn prev-btn" onclick="changeImage(-1)">&#10094;</button>
+            <img id="ssm-img-placeholder" src="" alt="Image">
+            <button class="image-nav-btn next-btn" onclick="changeImage(1)">&#10095;</button>
+            <p id="image-counter" style="margin-bottom: 10px; color: #718096;"></p>
+            <div class="form-actions" style="justify-content: center; margin-top: 0;">
+                <button type="button" class="btn-close-image" onclick="closeModal('modal-view-image')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-add-venue" class="modal-overlay">
+        <div class="modal-box-add">
+            <h3>Add New Venue</h3>
+            <form id="form-add-venue">
+                <div class="form-group">
+                    <label>Owner Name</label>
+                    <input type="text" id="v-owner-name" placeholder="e.g., Ahmad bin Zulkifli" required>
+                </div>
+                <div class="form-group">
+                    <label>Venue Name</label>
+                    <input type="text" id="v-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Full Address</label>
+                    <input type="text" id="v-address">
+                </div>
+                <div class="form-group">
+                    <label>Capacity</label>
+                    <input type="text" id="v-capacity" required>
+                </div>
+                <div class="form-group">
+                    <label>Venue Images (Upload at least one)</label>
+                    <input type="file" id="v-images" accept="image/*" multiple required>
+                </div>
+                <div class="form-group">
+                    <label>SSM Number</label>
+                    <input type="text" id="v-ssm" placeholder="e.g., 202X03XXXXXX" required>
+                </div>
+                <div class="form-group">
+                    <label>Upload Certificate (SSM)</label>
+                    <input type="file" id="v-certificate" accept=".pdf, .jpg, .jpeg, .png" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-add-venue')">Cancel</button>
+                    <button type="button" class="btn-submit" onclick="addNewVenue()">Save Venue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-add-package" class="modal-overlay">
+        <div class="modal-box-add">
+            <h3>Add New Package</h3>
+            <form id="form-add-package">
+                <div class="form-group">
+                    <label>Enter Your Venue Name</label>
+                    <input type="text" id="p-venue" placeholder="e.g., Dewan Serbaguna Telok Mas" required>
+                </div>
+                <div class="form-group">
+                    <label>Package Name</label>
+                    <input type="text" id="p-name" placeholder="e.g., Basic, Silver, Gold" required>
+                </div>
+                <div class="form-group">
+                    <label>Price (RM)</label>
+                    <input type="text" id="p-price" required>
+                </div>
+                <div class="form-group">
+                    <label>Package Inclusions</label>
+                    <textarea id="p-inclusions" style="height: 80px; resize: none;" placeholder="e.g., - nasi&#10;- ayam&#10;- air"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-add-package')">Cancel</button>
+                    <button type="button" class="btn-submit" onclick="addNewPackage()">Save Package</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-edit-package" class="modal-overlay">
+        <div class="modal-box-add">
+            <h3>Edit Package</h3>
+            <form id="form-edit-package">
+                <div class="form-group">
+                    <label>Select Venue</label>
+                    <select id="edit-p-venue" required>
+                        <option value="Dewan Serbaguna Telok Mas">Dewan Serbaguna Telok Mas</option>
+                        <option value="Dahlia Wedding Hall">Dahlia Wedding Hall</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Package Name</label>
+                    <input type="text" id="edit-p-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Price (RM)</label>
+                    <input type="text" id="edit-p-price" required>
+                </div>
+                <div class="form-group">
+                    <label>Package Inclusions</label>
+                    <textarea id="edit-p-inclusions" style="height: 80px; resize: none;"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('modal-edit-package')">Cancel</button>
+                    <button type="button" class="btn-submit" onclick="updatePackage()">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-delete-confirmation" class="modal-overlay">
+        <div class="modal-box-delete">
+            <p id="delete-prompt-text">Are you sure you want to delete this?</p>
+            <div class="form-actions" style="justify-content: center; margin-top: 0;">
+                <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-delete-confirmation')">Cancel</button>
+                <button type="button" class="btn-confirm-ok" id="btn-confirm-delete-action">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-logout-confirmation" class="modal-overlay">
+        <div class="modal-box-logout">
+            <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
+            <div class="form-actions" style="justify-content: center; margin-top: 0; gap: 15px;">
+                <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-logout-confirmation')">Cancel</button>
+                <button type="button" class="btn-logout-confirm" onclick="executeLogout()">Log Out</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let rowToDelete = null;
+        let rowToEdit = null;
+        let currentGallery = [];
+        let currentIndex = 0;
+
+        window.onload = function() {
+            const dropdowns = document.querySelectorAll('.select-status');
+            dropdowns.forEach(select => updateStatusStyle(select));
+            updateStats();
+        };
+
+        function switchTab(tabName) {
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => section.classList.remove('active-section'));
+            const links = document.querySelectorAll('.nav-links a');
+            links.forEach(link => link.classList.remove('active'));
+            document.getElementById('section-' + tabName).classList.add('active-section');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        function openModal(modalId, type = '', buttonElement = null) {
+            document.getElementById(modalId).style.display = 'flex';
+            if (modalId === 'modal-delete-confirmation') {
+                rowToDelete = buttonElement.closest('tr');
+                const promptText = document.getElementById('delete-prompt-text');
+                const confirmBtn = document.getElementById('btn-confirm-delete-action');
+                if (type === 'venue') {
+                    promptText.textContent = "Are you sure you want to delete this venue? This action cannot be undone.";
+                    confirmBtn.setAttribute('onclick', "confirmDelete('Venue Deleted Successfully!')");
+                }
+            }
+            if (modalId === 'modal-edit-package' && type === 'package') {
+                rowToEdit = buttonElement.closest('tr');
+                const cells = rowToEdit.getElementsByTagName('td');
+                document.getElementById('edit-p-venue').value = cells[0].textContent;
+                document.getElementById('edit-p-name').value = cells[1].textContent;
+                document.getElementById('edit-p-price').value = cells[2].textContent;
+                document.getElementById('edit-p-inclusions').value = cells[3].textContent === '-' ? '' : cells[3].textContent;
+            }
+        }
+
+        function openImageModal(imagePath) {
+            document.getElementById('ssm-img-placeholder').src = imagePath;
+            document.getElementById('modal-view-image').style.display = 'flex';
+            document.getElementById('gallery-title').textContent = 'SSM Certificate View';
+            document.querySelector('.prev-btn').style.display = 'none';
+            document.querySelector('.next-btn').style.display = 'none';
+            document.getElementById('image-counter').textContent = '';
+        }
+
+        function openGalleryModal(images, venueName) {
+            currentGallery = images;
+            currentIndex = 0;
+            document.getElementById('gallery-title').textContent = venueName;
+            updateGalleryImage();
+            document.getElementById('modal-view-image').style.display = 'flex';
+            document.querySelector('.prev-btn').style.display = 'block';
+            document.querySelector('.next-btn').style.display = 'block';
+        }
+
+        function updateGalleryImage() {
+            document.getElementById('ssm-img-placeholder').src = currentGallery[currentIndex];
+            document.getElementById('image-counter').textContent = `(Picture ${currentIndex + 1} of ${currentGallery.length})`;
+        }
+
+        function changeImage(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) currentIndex = currentGallery.length - 1;
+            if (currentIndex >= currentGallery.length) currentIndex = 0;
+            updateGalleryImage();
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function executeLogout() {
+            window.location.href = 'login.html';
+        }
+
+        function addNewVenue() {
+            const ownerName = document.getElementById('v-owner-name').value;
+            const name = document.getElementById('v-name').value;
+            const address = document.getElementById('v-address').value;
+            const capacity = document.getElementById('v-capacity').value;
+            const imagesInput = document.getElementById('v-images');
+            const ssm = document.getElementById('v-ssm').value;
+            const certificateInput = document.getElementById('v-certificate');
+
+            if (ownerName === '' || name === '' || capacity === '' || imagesInput.files.length === 0 || ssm === '' || certificateInput.value === '') {
+                alert('Please fill in all required information!');
+                return;
+            }
+
+            const tbody = document.querySelector('#table-venues tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+            <td>${ownerName}</td>
             <td>${name}</td>
-            <td>${area}</td>
+            <td>${address ? address : '-'}</td>
             <td>${capacity}</td>
-            <td>
-                <button class="btn-edit" onclick="openModal('modal-edit-venue')">Edit</button>
-                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'venue', this)">Delete</button>
-            </td>
+            <td><button class="btn-edit" onclick="openGalleryModal(['images/weddingVenue.jpg', 'images/pelamin.jpg'], '${name}')">View</button></td>
+            <td><a href="javascript:void(0)" onclick="openImageModal('images/ssmCert.jpg')" style="color: #710349; font-weight: 600; text-decoration: underline;">${ssm}</a></td>
         `;
-        
-        tbody.appendChild(newRow); 
-        
-        const pVenueSelect = document.getElementById('p-venue');
-        const newOption = document.createElement('option');
-        newOption.value = name;
-        newOption.textContent = name;
-        pVenueSelect.appendChild(newOption);
+            tbody.appendChild(newRow);
 
-        updateStats(); 
-        document.getElementById('form-add-venue').reset(); 
-        submitForm('modal-add-venue', 'Venue Added Successfully!');
-    }
+            const editPVenueSelect = document.getElementById('edit-p-venue');
+            const newOption = document.createElement('option');
+            newOption.value = name;
+            newOption.textContent = name;
+            editPVenueSelect.appendChild(newOption);
 
-    //ambik data yg diisi dalam form "add new package" and utk check form supaya semua field tu diisi 
-    function addNewPackage() {
-        const venue = document.getElementById('p-venue').value;
-        const name = document.getElementById('p-name').value;
-        const price = document.getElementById('p-price').value;
-        const inclusions = document.getElementById('p-inclusions').value;
-
-        if(venue === '' || name === '' || price === '') {
-            alert('Please select Venue, Package Name, and Price!');
-            return;
+            updateStats();
+            document.getElementById('form-add-venue').reset();
+            closeModal('modal-add-venue');
+            triggerToast('Venue Added Successfully!');
         }
 
-    // untuk tambah package baru dalam table, etc lepastu bagi mesaage
-        const tbody = document.querySelector('#table-packages tbody');
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
+        function addNewPackage() {
+            const venue = document.getElementById('p-venue').value;
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const inclusions = document.getElementById('p-inclusions').value;
+            if (venue === '' || name === '' || price === '') {
+                alert('Please fill in all required information!');
+                return;
+            }
+
+            const tbody = document.querySelector('#table-packages tbody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
             <td>${venue}</td>
             <td>${name}</td>
             <td>${price}</td>
-            <td>${inclusions ? inclusions : '-'}</td>
+            <td class="inclusions-cell">${inclusions ? inclusions : '-'}</td>
             <td>
-                <button class="btn-edit" onclick="openModal('modal-edit-package')">Edit</button>
-                <button class="btn-delete" onclick="openModal('modal-delete-confirmation', 'package', this)">Delete</button>
+                <button class="btn-edit" onclick="openModal('modal-edit-package', 'package', this)">Edit</button>
             </td>
         `;
-        
-        tbody.appendChild(newRow);
-        
-        updateStats(); 
-        document.getElementById('form-add-package').reset(); 
-        submitForm('modal-add-package', 'Package Added Successfully!');
-    }
-
-    //untuk tutup popup window and tunjuk message berjaya
-    function submitForm(modalId, message) {
-        closeModal(modalId);
-        triggerToast(message);
-    }
-
-    // untuk delete data yg kena pilih lepastu show message berjaya
-    function confirmDelete(message) {
-        if (rowToDelete) {
-            rowToDelete.remove(); 
-            rowToDelete = null;
+            tbody.appendChild(newRow);
+            updateStats();
+            document.getElementById('form-add-package').reset();
+            submitForm('modal-add-package', 'Package Added Successfully!');
         }
-        closeModal('modal-delete-confirmation');
-        updateStats(); 
-        triggerToast(message);
-    }
 
-    // utk kira semua data dan update jum. dalam main page
-    function updateStats() {
-        const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
-        const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
-        const totalBookings = document.querySelectorAll('#table-bookings tbody tr').length; 
-        
-        document.getElementById('count-venues').textContent = totalVenues + " Venues";
-        document.getElementById('count-packages').textContent = totalPackages + " Packages";
-        document.getElementById('count-confirmed').textContent = totalBookings + " Confirmed Bookings";
-    }
-
-    //untuk toast notification
-    function triggerToast(message) {
-        const toast = document.getElementById('toast-global');
-        if (toast) {
-            toast.textContent = message;
-            toast.classList.add('show-toast'); 
-            
-            setTimeout(() => {
-                toast.classList.remove('show-toast'); 
-            }, 3000);
+        function updatePackage() {
+            const venue = document.getElementById('edit-p-venue').value;
+            const name = document.getElementById('edit-p-name').value;
+            const price = document.getElementById('edit-p-price').value;
+            const inclusions = document.getElementById('edit-p-inclusions').value;
+            if (venue === '' || name === '' || price === '') {
+                alert('Please fill in all required information!');
+                return;
+            }
+            if (rowToEdit) {
+                const cells = rowToEdit.getElementsByTagName('td');
+                cells[0].textContent = venue;
+                cells[1].textContent = name;
+                cells[2].textContent = price;
+                cells[3].textContent = inclusions ? inclusions : '-';
+            }
+            closeModal('modal-edit-package');
+            triggerToast('Package Updated Successfully!');
+            rowToEdit = null;
         }
-    }
 
-    // untuk tutup popup window bila click bahagian luar popup
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal-overlay')) {
-            event.target.style.display = 'none';
+        function submitForm(modalId, message) {
+            closeModal(modalId);
+            triggerToast(message);
         }
-    }
 
-    //unjuk notification bila page dah load, klau ada mesej dari server
-    <?php if(!empty($message)): ?>
-        window.onload = function() {
-            triggerToast("<?php echo $message; ?>", "<?php echo $status == 'error'; ?>");
-        };
-    <?php endif; ?>
+        function confirmDelete(message) {
+            if (rowToDelete) {
+                rowToDelete.remove();
+                rowToDelete = null;
+            }
+            closeModal('modal-delete-confirmation');
+            updateStats();
+            triggerToast(message);
+        }
 
-</script>
+        function updateStatusStyle(selectElement) {
+            const status = selectElement.value;
+            if (status === 'Confirmed') {
+                selectElement.style.color = '#2f855a';
+            } else if (status === 'Pending') {
+                selectElement.style.color = '#dd6b20';
+            } else if (status === 'Completed') {
+                selectElement.style.color = '#3182ce';
+            } else if (status === 'Cancelled') {
+                selectElement.style.color = '#e53e3e';
+            }
+        }
+
+        function updateStats() {
+            const totalVenues = document.querySelectorAll('#table-venues tbody tr').length;
+            const totalPackages = document.querySelectorAll('#table-packages tbody tr').length;
+
+            let pendingCount = 0;
+            let confirmedCount = 0;
+            let completedCount = 0;
+            let cancelledCount = 0;
+
+            const dropdowns = document.querySelectorAll('#table-bookings tbody .select-status');
+            dropdowns.forEach(select => {
+                const currentStatus = select.value;
+                if (currentStatus === 'Pending') pendingCount++;
+                if (currentStatus === 'Confirmed') confirmedCount++;
+                if (currentStatus === 'Completed') completedCount++;
+                if (currentStatus === 'Cancelled') cancelledCount++;
+            });
+            document.getElementById('count-pending').textContent = pendingCount + " Pending Bookings";
+            document.getElementById('count-confirmed').textContent = confirmedCount + " Confirmed Bookings";
+            document.getElementById('count-completed').textContent = completedCount + " Completed Bookings";
+            document.getElementById('count-cancelled').textContent = cancelledCount + " Cancelled Bookings";
+        }
+
+        function triggerToast(message) {
+            const toast = document.getElementById('toast-global');
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show-toast');
+                setTimeout(() => {
+                    toast.classList.remove('show-toast');
+                }, 3000);
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
 
 </body>
+
 </html>
