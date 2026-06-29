@@ -1,3 +1,32 @@
+<?php
+// 1. Sertakan fail sambungan pangkalan data anda
+include 'db_connection.php';
+
+// 2. Ambil semua data venue dinamik yang telah ditambah oleh venue owner
+$venue_query = "SELECT venue_id, venue_name FROM venue";
+$venue_result = mysqli_query($conn, $venue_query);
+
+$venues = [];
+if ($venue_result && mysqli_num_rows($venue_result) > 0) {
+    while ($row = mysqli_fetch_assoc($venue_result)) {
+        $venues[] = $row;
+    }
+}
+
+// 3. Ambil data tempahan (booking) untuk diproses oleh JavaScript di bawah
+$booking_query = "SELECT venue_id, MONTHNAME(event_date) as b_month, YEAR(event_date) as b_year, COUNT(booking_id) as total_bookings 
+                  FROM booking 
+                  WHERE bookingstatus = 'Confirmed' OR bookingstatus = 'Approved' -- Tukar mengikut status sistem anda
+                  GROUP BY venue_id, b_month, b_year";
+$booking_result = mysqli_query($conn, $booking_query);
+
+$booking_data = [];
+if ($booking_result && mysqli_num_rows($booking_result) > 0) {
+    while ($row = mysqli_fetch_assoc($booking_result)) {
+        $booking_data[] = $row;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -110,9 +139,15 @@ body {
     width: 90%;
     max-width: 1200px;
     position: relative;
-    min-height: 550px; 
+    /* Ditambah min-height untuk memberi ruang di bawah select option */
+    min-height: 550px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     border: 1px solid #4a042e;
+    animation: fadeIn 0.3s ease;
+}
+
+.content-section.active-section {
+    display: block;
     animation: fadeIn 0.3s ease;
 }
 
@@ -125,6 +160,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* Ditambah margin bottom yang besar untuk memaksa ruang kosong di bawah dropdown */
     margin-bottom: 45px;
     padding-bottom: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -292,7 +328,7 @@ body {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e8f0;
     animation: modalSlideUp 0.3s ease;
-    max-width: 440px; 
+    max-width: 440px;
     text-align: center;
 }
 
@@ -425,14 +461,19 @@ body {
             </div>
 
             <div class="bars-area">
-                <div class="bar-wrapper">
-                    <div class="bar" id="bar-dewan" style="height: <?php echo isset($_GET['dewan']) ? $_GET['dewan'] : '0%'; ?>;"></div> 
-                    <div class="bar-label">Dewan Serbaguna<br>Telok Mas</div>
-                </div>
-                <div class="bar-wrapper">
-                    <div class="bar" id="bar-dahlia" style="height: <?php echo isset($_GET['dahlia']) ? $_GET['dahlia'] : '0%'; ?>;"></div> 
-                    <div class="bar-label">Dahlia Wedding Hall</div>
-                </div>
+                <?php 
+                // Loop untuk memaparkan nama dewan secara dinamik mengikut data pangkalan data
+                if (!empty($venues)): 
+                    foreach ($venues as $venue): 
+                ?>
+                   <div class="bar-wrapper">
+                        <div class="bar" id="bar-id-<?php echo $venue['venue_id']; ?>" style="height: 0%;"></div> 
+                        <div class="bar-label"><?php echo htmlspecialchars($venue['venue_name']); ?></div>
+                    </div>
+                <?php 
+                    endforeach; 
+                endif; 
+                ?>
             </div>
         </div>
 
@@ -452,6 +493,11 @@ body {
 </div>
 
 <script>
+    // Menyimpan data booking dari PHP ke dalam objek JavaScript JSON
+    const databaseBookings = <?php echo json_encode($booking_data); ?>;
+    // Menyimpan senarai senarai venue dari PHP ke JavaScript
+    const currentVenues = <?php echo json_encode($venues); ?>;
+
     function openModal(modalId) {
         document.getElementById(modalId).style.display = 'flex';
     }
@@ -461,47 +507,50 @@ body {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.php'; 
+        window.location.href = 'login.html';
     }
 
     function triggerReportGeneration() {
         const month = document.getElementById('month-select').value;
         const year = document.getElementById('year-select').value;
 
+        // Reset semua bar ke 0% terlebih dahulu
+        currentVenues.forEach(v => {
+            const barElement = document.getElementById(`bar-id-${v.venue_id}`);
+            if (barElement) barElement.style.height = "0%";
+        });
+
         if (month === "Month" || year === "Year") {
             triggerToast('Please select both Month and Year!');
-            document.getElementById('bar-dewan').style.height = "0%";
-            document.getElementById('bar-dahlia').style.height = "0%";
             return;
         }
 
-        let dewanHeight = '0%';
-        let dahliaHeight = '0%';
+        // Tapis data pangkalan data berdasarkan bulan dan tahun yang dipilih user
+        let matchFound = false;
+        
+        databaseBookings.forEach(booking => {
+            if (booking.b_month === month && booking.b_year === year) {
+                const barElement = document.getElementById(`bar-id-${booking.venue_id}`);
+                if (barElement) {
+                    // Maksimum grid chart ialah 6. Kira peratusan: (jumlah_booking / 6) * 100
+                    let total = parseInt(booking.total_bookings);
+                    if (total > 6) total = 6; // Hadkan tinggi ke 100% jika lebih dari 6
+                    
+                    const heightPercent = (total / 6) * 100;
+                    barElement.style.height = `${heightPercent}%`;
+                    matchFound = true;
+                }
+            }
+        });
 
-        if (month === "October" && year === "2025") {
-            dewanHeight = '16.6%';
-            dahliaHeight = '0%';
-            triggerToast(`Report for ${month} ${year} updated successfully!`);
-        } else if (month === "August" && year === "2025") {
-            dewanHeight = '0%';
-            dahliaHeight = '16.6%';
-            triggerToast(`Report for ${month} ${year} updated successfully!`);
-        } else {
-            dewanHeight = '0%';
-            dahliaHeight = '0%';
-            triggerToast(`Report for ${month} ${year} updated successfully!`);
-        }
-
-        document.getElementById('bar-dewan').style.height = dewanHeight;
-        document.getElementById('bar-dahlia').style.height = dahliaHeight;
+        triggerToast(`Report for ${month} ${year} updated successfully!`);
     }
 
     function triggerToast(message) {
         const toast = document.getElementById('toast-global');
         if (toast) {
             toast.textContent = message;
-            toast.classList.add('show-toast'); 
-            
+            toast.classList.add('show-toast');
             setTimeout(() => {
                 toast.classList.remove('show-toast'); 
             }, 3000);
