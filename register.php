@@ -1,30 +1,104 @@
 <?php
 
-$registration_success = false;
-$error_message = "";
+include('db_connection.php');
+
+
+$registration_status = "";
+$message_content = "";
+
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    $fullname = $_POST['fullname'];
-    $email    = $_POST['email'];
-    $phone    = $_POST['phone'];
-    $password = $_POST['password'];
-    $role     = $_POST['role'];
+    
+    $fullname = mysqli_real_escape_string($conn, $_POST['fullname'] ?? ''); 
+    $email    = mysqli_real_escape_string($conn, $_POST['email'] ?? '');
+    $phone    = mysqli_real_escape_string($conn, $_POST['phone'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $role     = mysqli_real_escape_string($conn, $_POST['role'] ?? '');
 
     
-    if ($role === 'client') {
-        header("Location: client.html"); 
-        exit();
-    } else if ($role === 'venue_owner') {
-        header("Location: venue_owner.html");
-        exit();
-    } else if ($role === 'admin') {
-        header("Location: admin_dashboard.html");
-        exit();
+    $passwordRegex = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$/';
+
+    if (!preg_match($passwordRegex, $password)) {
+        $registration_status = "error";
+        $message_content = "Password must be at least 6 characters with uppercase, lowercase, and symbols!";
+    } else {
+        
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        
+        
+        $default_status = "Active";
+
+        
+        if ($role === 'admin') {
+            
+            $check_admin_query = "SELECT COUNT(*) AS total_admin FROM admin";
+            $check_admin_result = mysqli_query($conn, $check_admin_query);
+            $admin_data = mysqli_fetch_assoc($check_admin_result);
+
+            if ($admin_data['total_admin'] >= 1) {
+                $registration_status = "error";
+                $message_content = "Registration failed! An Admin account already exists. Only one Admin is allowed.";
+            } else {
+                
+                $check_email = mysqli_query($conn, "SELECT admin_id FROM admin WHERE admin_email = '$email'");
+                if (mysqli_num_rows($check_email) > 0) {
+                    $registration_status = "error";
+                    $message_content = "Email address is already registered as an Admin!";
+                } else {
+                    
+                    $insert_query = "INSERT INTO admin (admin_name, admin_email, admin_password, admin_role) 
+                                     VALUES ('$fullname', '$email', '$hashed_password', 'admin')";
+                    if (mysqli_query($conn, $insert_query)) {
+                        $registration_status = "success";
+                    } else {
+                        $registration_status = "error";
+                        $message_content = "Database error: " . mysqli_error($conn);
+                    }
+                }
+            }
+        }
+        
+        elseif ($role === 'client') {
+            
+            $check_email = mysqli_query($conn, "SELECT client_id FROM client WHERE client_email = '$email'");
+            if (mysqli_num_rows($check_email) > 0) {
+                $registration_status = "error";
+                $message_content = "Email address is already registered as a Client!";
+            } else {
+                
+                $insert_query = "INSERT INTO client (client_name, client_email, client_phonenum, client_password, client_role, client_status) 
+                                 VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'client', '$default_status')";
+                if (mysqli_query($conn, $insert_query)) {
+                    $registration_status = "success";
+                } else {
+                    $registration_status = "error";
+                    $message_content = "Database error: " . mysqli_error($conn);
+                }
+            }
+        }
+        
+        elseif ($role === 'venue_owner') {
+            
+            $check_email = mysqli_query($conn, "SELECT owner_id FROM venue_owner WHERE owner_email = '$email'");
+            if (mysqli_num_rows($check_email) > 0) {
+                $registration_status = "error";
+                $message_content = "Email address is already registered as a Venue Owner!";
+            } else {
+                
+                $insert_query = "INSERT INTO venue_owner (owner_name, owner_email, owner_phonenum, owner_password, owner_role, owner_status) 
+                                 VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'venue_owner', '$default_status')";
+                if (mysqli_query($conn, $insert_query)) {
+                    $registration_status = "success";
+                } else {
+                    $registration_status = "error";
+                    $message_content = "Database error: " . mysqli_error($conn);
+                }
+            }
+        }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -72,19 +146,19 @@ body {
 
 .form-card {
     background-color: #DCDCDC; 
-    border: 1px solid #DCDCDC; 
+    border: 1px solid #DCDCDC;
     border-radius: 24px; 
     padding: 25px 45px; 
     text-align: left;
     box-shadow: 
         0px 4px 6px -1px #0000001a,
-        0px 20px 40px -10px #00000066; 
+        0px 20px 40px -10px #00000066;
     width: 100%;
     animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .form-group {
-    margin-bottom: 12px; 
+    margin-bottom: 12px;
 }
 
 .form-group label {
@@ -110,7 +184,7 @@ body {
     padding: 10px 16px; 
     border: 1.5px solid #e2e8f0; 
     border-radius: 10px; 
-    font-size: 14px; 
+    font-size: 14px;
     color: #1a1a1a;
     background-color: #f8fafc; 
     outline: none;
@@ -122,7 +196,7 @@ body {
 .form-group select:focus {
     border-color: #710349;
     background-color: #ffffff;
-    box-shadow: 0 0 0 4px #71034926; 
+    box-shadow: 0 0 0 4px #71034926;
 }
 
 .form-group select {
@@ -189,13 +263,16 @@ body {
 }
 
 @keyframes fadeInDown {
-    from { opacity: 0; transform: translateY(-15px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0;
+    transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0);
+    }
 }
 
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    to { opacity: 1;
+    transform: translateY(0); }
 }
 
 .modal-overlay {
@@ -269,7 +346,7 @@ body {
         <h2 class="title">Create New Account</h2>
 
         <div class="form-card">
-            <form action="register.php" method="POST" id="registerForm">
+            <form action="" method="POST" id="registerForm">
                 
                 <div class="form-group">
                     <label for="fullname">Full Name</label>
@@ -301,7 +378,7 @@ body {
 
                 <div class="form-group">
                     <label for="confirm-password">Confirm Password</label>
-                    <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter password" required>
+                    <input type="password" id="confirm-password" placeholder="Re-enter password" required>
                 </div>
 
                 <div class="form-group">
@@ -317,7 +394,8 @@ body {
                 <button type="submit" class="btn-register">REGISTER</button>
 
                 <div class="footer-links">
-                    Already have an account? <a href="login.html">Login here</a>
+                    Already have an account?
+                    <a href="login.php">Login here</a>
                 </div>
             </form>
         </div>
@@ -333,21 +411,46 @@ body {
     </div>
 
     <script>
-        document.getElementById('registerForm').addEventListener('submit', function(event) {
-            
-            event.preventDefault();
+        
+        const phpStatus = "<?php echo $registration_status; ?>";
+        const phpMessage = "<?php echo $message_content; ?>";
+        const chosenRole = "<?php echo $role ?? ''; ?>";
 
-            const form = this;
+        const modal = document.getElementById('customModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalOkBtn = document.getElementById('modalOkBtn');
+
+        
+        if (phpStatus === "success") {
+            modalMessage.innerText = 'Registration Successful! Please click OK to go to your page.';
+            modal.classList.add('active');
+
+            modalOkBtn.onclick = function() {
+                modal.classList.remove('active');
+                if (chosenRole === 'client') {
+                    window.location.href = 'client.php';
+                } else if (chosenRole === 'venue_owner') {
+                    window.location.href = 'venue_owner.php';
+                } else if (chosenRole === 'admin') {
+                    window.location.href = 'admin_dashboard.php';
+                }
+            };
+        } else if (phpStatus === "error") {
+            modalMessage.innerText = phpMessage;
+            modal.classList.add('active');
+            modalOkBtn.onclick = function() {
+                modal.classList.remove('active');
+            };
+        }
+
+        
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
-            const modal = document.getElementById('customModal');
-            const modalMessage = document.getElementById('modalMessage');
-            const modalOkBtn = document.getElementById('modalOkBtn');
 
             const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$/;
-            
-            
             if (!passwordRegex.test(password)) {
+                event.preventDefault();
                 modalMessage.innerText = 'Password must be at least 6 characters with uppercase, lowercase, and symbols!';
                 modal.classList.add('active');
                 modalOkBtn.onclick = function() {
@@ -356,8 +459,8 @@ body {
                 return;
             }
 
-            
             if (password !== confirmPassword) {
+                event.preventDefault();
                 modalMessage.innerText = 'Password and Confirm Password do not match!';
                 modal.classList.add('active');
                 modalOkBtn.onclick = function() {
@@ -365,16 +468,7 @@ body {
                 };
                 return;
             }
-
             
-            modalMessage.innerText = 'Registration Successful! Please click OK to process your registration.';
-            modal.classList.add('active');
-
-            
-            modalOkBtn.onclick = function() {
-                modal.classList.remove('active');
-                form.submit();
-            };
         });
     </script>
 </body>

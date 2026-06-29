@@ -1,20 +1,14 @@
 <?php
 
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "wedding_db";
-$port = 3307;
-
-$conn = new mysqli($servername, $username, $password, $dbname, $port);
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+include('db_connection.php');
 
 
-$sql = "SELECT * FROM venue";
-$result = $conn->query($sql);
+$query = "SELECT v.*, vo.owner_name, a.admin_id 
+          FROM venue v
+          LEFT JOIN venue_owner vo ON v.owner_id = vo.owner_id
+          LEFT JOIN admin a ON v.admin_id = a.admin_id";
+
+$result = mysqli_query($conn, $query);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -22,82 +16,493 @@ $result = $conn->query($sql);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - All Venues</title>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f4f5f7; color: #2d3748; min-height: 100vh; -webkit-font-smoothing: antialiased; }
-        .container { width: 100%; padding-bottom: 60px; }
-        .header { background-color: #ffffff; padding: 24px 5%; border-bottom: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
-        .logo-area { font-size: 24px; font-weight: 700; color: #4a042e; letter-spacing: -0.5px; }
-        .nav-links { display: flex; justify-content: center; gap: 25px; }
-        .nav-links a { text-decoration: none; color: #718096; font-size: 15px; font-weight: 600; cursor: pointer; padding: 6px 4px 12px 4px; transition: color 0.2s ease, border-color 0.2s ease; border-bottom: 3px solid transparent; }
-        .nav-links a:hover { color: #710349; }
-        .nav-links a.active { color: #710349; border-bottom: 3px solid #710349; }
-        .nav-links a.logout { color: #e53e3e; }
-        .nav-links a.logout:hover { color: #c53030; }
-        .welcome-banner { background: linear-gradient(135deg, #710349 0%, #4a042e 100%); color: white; margin: 40px auto 25px auto; padding: 40px; border-radius: 16px; width: 90%; max-width: 1200px; box-shadow: 0 4px 20px rgba(113, 3, 73, 0.15); text-align: center; }
-        .welcome-banner h2 { font-size: 26px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .welcome-banner p { font-size: 15px; color: #f7fafc; opacity: 0.85; }
-        .content-section { background-color: #ffffff; color: #2d3748; margin: 0 auto; padding: 35px; border-radius: 16px; width: 90%; max-width: 1200px; position: relative; min-height: 320px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #edf2f7; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #edf2f7; }
-        .section-title-container { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-        .title-inline-container { display: flex; align-items: center; gap: 12px; }
-        .package-select { padding: 6px 12px; font-size: 14px; font-weight: 500; color: #4a5568; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 6px; cursor: pointer; outline: none; transition: border-color 0.2s ease; }
-        .package-select:focus { border-color: #710349; }
-        .section-header h3 { font-size: 20px; font-weight: 600; color: #1a202c; }
-        .sub-nav { display: flex; gap: 20px; }
-        .sub-nav span { font-size: 14px; font-weight: 500; color: #718096; cursor: pointer; padding-bottom: 4px; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
-        .sub-nav span:hover { color: #710349; }
-        .sub-nav span.active-sub { color: #1a202c; font-weight: 600; border-bottom: 2px solid #1a202c; }
-        .chart-container { display: none; max-width: 400px; margin: 20px auto; }
-        .btn-view { background-color: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; transition: all 0.2s ease; }
-        .btn-view:hover { background-color: #edf2f7; color: #1a202c; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 15px; }
-        th, td { padding: 16px 18px; border-bottom: 1px solid #edf2f7; }
-        th { font-weight: 600; color: #718096; background-color: #f7fafc; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { color: #4a5568; }
-        tr:hover td { background-color: #fcfcfd; }
-        td:last-child { white-space: nowrap; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(26, 32, 44, 0.4); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; display: none; }
-        .modal-box-delete { background-color: #ffffff; width: 90%; border-radius: 16px; padding: 35px; color: #1a202c; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0; animation: modalSlideUp 0.3s ease; max-width: 440px; text-align: center; }
-        @keyframes modalSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .form-actions { display: flex; justify-content: center; gap: 12px; margin-top: 30px; }
-        .btn-cancel { background-color: #ffffff; color: #4a5568; border: 1px solid #cbd5e0; padding: 11px 28px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
-        .btn-cancel:hover { background-color: #f7fafc; color: #1a202c; }
-        .modal-box-delete p { font-size: 16px; color: #4a5568; margin-bottom: 25px; }
-        .btn-confirm-logout { background-color: #e53e3e; color: #ffffff; border: none; padding: 11px 28px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.2s ease; }
-        .btn-confirm-logout:hover { background-color: #e53e3e; }
-        .toast-notification { position: fixed; bottom: 25px; right: 25px; background-color: #2f855a; color: white; padding: 14px 28px; border-radius: 8px; font-size: 14px; font-weight: 600; z-index: 1010; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); visibility: hidden; opacity: 0; transform: translateY(10px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .toast-notification.show-toast { visibility: visible; opacity: 1; transform: translateY(0); }
-        .select-approved { background-color: #e6fffa !important; color: #2f855a !important; border-color: #b2f5ea !important; }
-        .select-rejected { background-color: #fff5f5 !important; color: #e53e3e !important; border-color: #fed7d7 !important; }
-        .modal-box-view-image { background-color: #ffffff; width: 90%; max-width: 650px; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); animation: fadeIn 0.4s ease-out; position: relative; }
-        .modal-box-view-image h4 { font-size: 18px; margin-bottom: 15px; color: #1a202c; font-weight: 500; }
-        .modal-box-view-image img { max-width: 100%; max-height: 60vh; border-radius: 8px; border: 1px solid #e2e8f0; object-fit: contain; margin-bottom: 15px; }
-        .modal-box-view-image p { margin: 15px 0; font-size: 14px; color: #4a5568; }
-        .nav-arrow { position: absolute; top: 40%; transform: translateY(-50%); background: #710349; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
-        .prev-arrow { left: 10px; } .next-arrow { right: 10px; }
-        .btn-close-purple { background-color: #710349; color: #ffffff; border: none; padding: 11px 28px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.2s ease; }
-    </style>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: #f4f5f7;
+    color: #2d3748;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    width: 100%;
+    padding-bottom: 60px;
+}
+
+.header {
+    background-color: #ffffff;
+    padding: 24px 5%;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.logo-area {
+    font-size: 24px;       
+    font-weight: 700;
+    color: #4a042e;
+    letter-spacing: -0.5px;
+}
+
+.nav-links {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #718096;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 4px 12px 4px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.nav-links a:hover {
+    color: #710349;
+}
+
+.nav-links a.active {
+    color: #710349;
+    border-bottom: 3px solid #710349;
+}
+
+.nav-links a.logout {
+    color: #e53e3e;
+}
+
+.nav-links a.logout:hover {
+    color: #c53030;
+}
+
+.welcome-banner {
+    background: linear-gradient(135deg, #710349 0%, #4a042e 100%);
+    color: white;
+    margin: 40px auto 25px auto;
+    padding: 40px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    box-shadow: 0 4px 20px rgba(113, 3, 73, 0.15);
+    text-align: center;
+}
+
+.welcome-banner h2 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.welcome-banner p {
+    font-size: 15px;
+    color: #f7fafc;
+    opacity: 0.85;
+}
+
+.content-section {
+    background-color: #ffffff;
+    color: #2d3748;
+    margin: 0 auto;
+    padding: 35px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 1200px;
+    position: relative;
+    min-height: 320px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #edf2f7;
+    animation: fadeIn 0.3s ease;
+}
+
+.content-section.active-section {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1;
+    transform: translateY(0); }
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.section-title-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.title-inline-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.package-select {
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #4a5568;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.package-select:focus {
+    border-color: #710349;
+}
+
+.section-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.sub-nav {
+    display: flex;
+    gap: 20px;
+}
+
+.sub-nav span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+    cursor: pointer;
+    padding-bottom: 4px;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sub-nav span:hover {
+    color: #710349;
+}
+
+.sub-nav span.active-sub {
+    color: #1a202c;
+    font-weight: 600;
+    border-bottom: 2px solid #1a202c;
+}
+
+.chart-container {
+    display: none;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.btn-delete {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #fed7d7;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+    background-color: #e53e3e;
+    color: white;
+}
+
+.btn-view {
+    background-color: #f7fafc;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+.btn-view:hover {
+    background-color: #edf2f7;
+    color: #1a202c;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 15px;
+}
+
+th, td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+th {
+    font-weight: 600;
+    color: #718096;
+    background-color: #f7fafc;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    color: #4a5568;
+}
+
+tr:hover td {
+    background-color: #fcfcfd;
+}
+
+td:last-child {
+    white-space: nowrap;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(26, 32, 44, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    display: none;
+}
+
+.modal-box-delete {
+    background-color: #ffffff;
+    width: 90%;
+    border-radius: 16px;
+    padding: 35px;
+    color: #1a202c;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    animation: modalSlideUp 0.3s ease;
+    max-width: 440px; 
+    text-align: center;
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1;
+    transform: translateY(0); }
+}
+
+.form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.btn-cancel {
+    background-color: #ffffff;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background-color: #f7fafc;
+    color: #1a202c;
+}
+
+.modal-box-delete p {
+    font-size: 16px;
+    color: #4a5568;
+    margin-bottom: 25px;
+}
+
+.btn-confirm-ok {
+    background-color: #e53e3e;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-confirm-ok:hover {
+    background-color: #c53030;
+}
+
+.btn-confirm-logout {
+    background-color: #e53e3e;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-confirm-logout:hover {
+    background-color: #e53e3e;
+}
+
+.toast-notification {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    background-color: #2f855a;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1010;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-notification.show-toast {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.select-approved {
+    background-color: #e6fffa !important;
+    color: #2f855a !important;
+    border-color: #b2f5ea !important;
+}
+
+.select-rejected {
+    background-color: #fff5f5 !important;
+    color: #e53e3e !important;
+    border-color: #fed7d7 !important;
+}
+
+.modal-box-view-image {
+    background-color: #ffffff;
+    width: 90%;
+    max-width: 650px;
+    border-radius: 16px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: fadeIn 0.4s ease-out;
+    position: relative;
+}
+
+.modal-box-view-image h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #1a202c;
+    font-weight: 500;
+}
+
+.modal-box-view-image img {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    object-fit: contain;
+    margin-bottom: 15px;
+}
+
+.modal-box-view-image p {
+    margin: 15px 0;
+    font-size: 14px;
+    color: #4a5568;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 40%;
+    transform: translateY(-50%);
+    background: #710349;
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.prev-arrow { left: 10px; }
+.next-arrow { right: 10px; }
+
+.btn-close-purple {
+    background-color: #710349;
+    color: #ffffff;
+    border: none;
+    padding: 11px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+</style>
 </head>
 <body>
+
 <div class="container">
     <div class="header">
         <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
         <div class="nav-links">
-            <a href="admin_dashboard.html">Dashboard</a>
-            <a href="admin_venues.html" class="active">All Venues</a>
-            <a href="admin_pacakges.html">All Packages</a>
-            <a href="admin_users.html">All Users</a>
-            <a href="admin_bookings.html">All Bookings</a>
+            <a href="admin_dashboard.php">Dashboard</a>
+            <a href="admin_venues.php" class="active">All Venues</a>
+            <a href="admin_packages.php">All Packages</a>
+            <a href="admin_users.php">All Users</a>
+            <a href="admin_bookings.php">All Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
         </div>
     </div>
+
     <div class="welcome-banner">
         <h2>Welcome, Admin! 👑</h2>
         <p>Manage users, venues and generate reports.</p>
     </div>
+
     <div class="content-section" style="display: block;">
         <div class="section-header">
             <div class="section-title-container">
@@ -110,14 +515,16 @@ $result = $conn->query($sql);
                 </div>
             </div>
         </div>
+
         <div id="view-chart" class="chart-container">
             <canvas id="venueOwnerChart"></canvas>
         </div>
+
         <div id="view-list" style="display: block;">
             <table id="table-venues">
                 <thead>
                     <tr>
-                        <th>Owner ID</th>
+                        <th>Owner Name</th>
                         <th>Venue Name</th>
                         <th>Full Address</th>
                         <th>Capacity</th>
@@ -128,33 +535,51 @@ $result = $conn->query($sql);
                 </thead>
                 <tbody>
                     <?php
-                    if ($result->num_rows > 0) {
-                        while($row = $result->fetch_assoc()) {
-                            // Format nombor capacity dengan comma
-                            $formatted_capacity = number_format($row['venue_capacity']);
-                            ?>
-                            <tr>
-                                <td>Owner ID: <?php echo htmlspecialchars($row['owner_id']); ?></td>
-                                <td><?php echo htmlspecialchars($row['venue_name']); ?></td>
-                                <td><?php echo htmlspecialchars($row['venue_location']); ?></td>
-                                <td><?php echo htmlspecialchars($formatted_capacity); ?></td>
-                                <td>
-                                    <button class="btn-view" onclick="openImageModal(['uploads/<?php echo htmlspecialchars($row['venue_image']); ?>'], '<?php echo htmlspecialchars($row['venue_name']); ?>', false)">View</button>
-                                </td>
-                                <td>
-                                    <a href="javascript:void(0)" onclick="openImageModal(['uploads/<?php echo htmlspecialchars($row['venue_ssm_file']); ?>'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;"><?php echo htmlspecialchars($row['venue_ssm']); ?></a>
-                                </td>
-                                <td>
-                                    <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
-                                        <option value="approved" class="select-approved" selected>Approved</option>
-                                        <option value="rejected" class="select-rejected">Rejected</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            <?php
+                    
+                    if (mysqli_num_rows($result) > 0) {
+                        while ($row = mysqli_fetch_assoc($result)) {
+                            
+                            $owner_name = htmlspecialchars($row['owner_name']);
+                            $venue_name = htmlspecialchars($row['venue_name']);
+                            $venue_location = htmlspecialchars($row['venue_location']);
+                            $venue_capacity = number_format($row['venue_capacity']);
+                            $venue_image = htmlspecialchars($row['venue_image']);
+                            $venue_ssm = htmlspecialchars($row['venue_ssm']);
+                            
+                            
+                            $venue_ssm_file = htmlspecialchars($row['venue_ssm_file']); 
+
+                            
+                            $status_class = 'select-approved';
+                            if (strtolower($venue_ssm) == 'rejected') { 
+                                $status_class = 'select-rejected';
+                            }
+                    ?>
+                    <tr data-package="basic">
+                        <td><?php echo $owner_name; ?></td>
+                        <td><?php echo $venue_name; ?></td>
+                        <td><?php echo $venue_location; ?></td>
+                        <td><?php echo $venue_capacity; ?></td>
+                        <td>
+                            <button class="btn-view" onclick="openImageModal(['<?php echo $venue_image; ?>'], '<?php echo $venue_name; ?>', false)">View</button>
+                        </td>
+                        <td>
+                            <a href="javascript:void(0)" onclick="openImageModal(['<?php echo $venue_ssm_file ? $venue_ssm_file : 'images/ssmCert.jpg'; ?>'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;">
+                                <?php echo $venue_ssm; ?>
+                            </a>
+                        </td>
+                        <td>
+                            <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
+                                <option value="approved" class="select-approved" selected>Approved</option>
+                                <option value="rejected" class="select-rejected">Rejected</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <?php
                         }
                     } else {
-                        echo "<tr><td colspan='7' style='text-align:center;'>No venues found</td></tr>";
+                        
+                        echo "<tr><td colspan='7' style='text-align:center;'>No venues found in database.</td></tr>";
                     }
                     ?>
                 </tbody>
@@ -162,7 +587,9 @@ $result = $conn->query($sql);
         </div>
     </div>
 </div>
+
 <div class="toast-notification" id="toast-global"></div>
+
 <div id="modal-view-image" class="modal-overlay">
     <div class="modal-box-view-image">
         <h4 id="img-title">Venue Pictures</h4>
@@ -173,6 +600,7 @@ $result = $conn->query($sql);
         <button class="btn-close-purple" onclick="closeModal('modal-view-image')">Close</button>
     </div>
 </div>
+
 <div id="modal-delete-confirmation" class="modal-overlay">
     <div class="modal-box-delete">
         <p>Are you sure you want to delete this venue? This action cannot be undone.</p>
@@ -182,6 +610,7 @@ $result = $conn->query($sql);
         </div>
     </div>
 </div>
+
 <div id="modal-logout-confirmation" class="modal-overlay">
     <div class="modal-box-delete">
         <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
@@ -191,9 +620,10 @@ $result = $conn->query($sql);
         </div>
     </div>
 </div>
+
 <script>
     let rowToDelete = null;
-    let myPieChart = null;
+    let myPieChart = null; 
     let currentImages = [];
     let currentIdx = 0;
 
@@ -210,10 +640,15 @@ $result = $conn->query($sql);
         currentIdx = 0;
         document.getElementById('img-title').textContent = title;
         document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
-        document.getElementById('img-counter').textContent = isSSM ? "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
-        const navStyle = isSSM ? 'none' : 'flex';
+        document.getElementById('img-counter').textContent = isSSM ?
+        "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
+        
+        
+        const navStyle = isSSM ?
+        'none' : 'flex';
         document.getElementById('btn-prev').style.display = navStyle;
         document.getElementById('btn-next').style.display = navStyle;
+        
         document.getElementById('modal-view-image').style.display = 'flex';
     }
 
@@ -225,7 +660,6 @@ $result = $conn->query($sql);
         document.getElementById('img-counter').textContent = `Picture ${currentIdx + 1} of ${currentImages.length}`;
     }
 
-    /* Fungsi-fungsi lain dikekalkan seadanya tanpa mengubah struktur asal */
     function toggleView(viewType) {
         const chartView = document.getElementById('view-chart');
         const listView = document.getElementById('view-list');
@@ -234,10 +668,10 @@ $result = $conn->query($sql);
 
         if (viewType === 'chart') {
             chartView.style.display = 'block';
-            listView.style.none = 'none';
+            listView.style.display = 'none';
             subChart.classList.add('active-sub');
             subList.classList.remove('active-sub');
-            renderPieChart();
+            renderPieChart(); 
         } else {
             chartView.style.display = 'none';
             listView.style.display = 'block';
@@ -251,8 +685,8 @@ $result = $conn->query($sql);
         const ownerCounts = {};
 
         rows.forEach(row => {
-            if (row.style.display !== 'none' && row.cells[0]) {
-                const ownerName = row.cells[0].textContent.trim();
+            if (row.style.display !== 'none' && row.cells.length > 1) {
+                const ownerName = row.cells[0].textContent.trim(); 
                 ownerCounts[ownerName] = (ownerCounts[ownerName] || 0) + 1;
             }
         });
@@ -297,6 +731,7 @@ $result = $conn->query($sql);
             const confirmBtn = document.getElementById('btn-confirm-delete-action');
             confirmBtn.setAttribute('onclick', "confirmDelete('Venue Deleted Successfully!')");
         }
+
         if (modalId === 'modal-logout-confirmation') {
             const confirmLogoutBtn = document.getElementById('btn-confirm-logout-action');
             confirmLogoutBtn.setAttribute('onclick', "confirmLogout()");
@@ -320,7 +755,7 @@ $result = $conn->query($sql);
     }
 
     function confirmLogout() {
-        window.location.href = 'login.html';
+        window.location.href = 'login.php';
     }
 
     function triggerToast(message) {
@@ -329,7 +764,7 @@ $result = $conn->query($sql);
             toast.textContent = message;
             toast.classList.add('show-toast');
             setTimeout(() => {
-                toast.classList.remove('show-toast');
+                toast.classList.remove('show-toast'); 
             }, 3000);
         }
     }
@@ -340,6 +775,6 @@ $result = $conn->query($sql);
         }
     }
 </script>
+
 </body>
 </html>
-<?php $conn->close(); ?>
