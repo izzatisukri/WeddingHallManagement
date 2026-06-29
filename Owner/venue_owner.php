@@ -676,7 +676,6 @@ td:last-child {
                         echo "<td>" . htmlspecialchars($v_row['venue_name']) . "</td>";
                         echo "<td>" . htmlspecialchars($v_row['venue_location']) . "</td>";
                         echo "<td>" . number_format($v_row['venue_capacity']) . "</td>";
-                        // Galeri gambar menggunakan gambar yang dimuat naik atau default
                         $img_path = "images/" . $v_row['venue_image'];
                         echo "<td><button class='btn-edit' onclick=\"openGalleryModal(['$img_path'], '" . htmlspecialchars($v_row['venue_name']) . "')\">View</button></td>";
                         $ssm_file_path = "images/" . $v_row['venue_ssm_file'];
