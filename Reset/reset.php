@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['step']) && $_POST['ste
             if (mysqli_query($conn, $update_query)) {
                 echo "<script>
                         alert('Password has been successfully updated in the database!');
-                        window.location.href = 'login.html';
+                        window.location.href = 'login.php';
                         </script>";
                 exit();
             } else {
@@ -259,7 +259,7 @@ body {
                 <button type="submit" id="submit-btn" class="btn-action">Next</button>
 
                 <div class="login-link">
-                    Already have an account? <a href="login.html">Login here</a>
+                    Already have an account? <a href="login.php">Login here</a>
                 </div>
             </form>
         </div>

@@ -310,12 +310,14 @@ td:last-child {
     <div class="header">
         <div class="logo-area">🌸 Wedding Hall Management - Admin Panel</div>
         <div class="nav-links">
-            <a href="admin_dashboard.html">Dashboard</a>
-            <a href="admin_venues.html">All Venues</a>
-            <a href="admin_pacakges.html">All Packages</a>
-            <a href="admin_users.html">All Users</a>
-            <a href="admin_bookings.html" class="active">All Bookings</a>
+            <div class="nav-links">
+            <a href="admin_dashboard.php">Dashboard</a>
+            <a href="admin_venues.php">All Venues</a>
+            <a href="admin_packages.php">All Packages</a>
+            <a href="admin_users.php">All Users</a>
+            <a href="admin_bookings.php" class="active">All Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
+        </div>
         </div>
     </div>
 
@@ -396,7 +398,7 @@ td:last-child {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.html'; 
+        window.location.href = 'login.php'; 
     }
 
     window.onclick = function(event) {

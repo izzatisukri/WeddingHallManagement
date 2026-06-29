@@ -288,7 +288,7 @@ td {
         <div class="nav-links">
             <a href="admin_dashboard.php">Dashboard</a>
             <a href="admin_venues.php">All Venues</a>
-            <a href="admin_packages.php" class="active">All Packages</a>
+            <a href="admin_packages.php" class="active">All Pacakges</a>
             <a href="admin_users.php">All Users</a>
             <a href="admin_bookings.php">All Bookings</a>
             <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
@@ -376,7 +376,7 @@ td {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.html'; 
+        window.location.href = 'login.php'; 
     }
 
     window.onclick = function(event) {
