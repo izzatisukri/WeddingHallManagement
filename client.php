@@ -24,7 +24,7 @@ if ($client_result && mysqli_num_rows($client_result) > 0) {
     $client_name = $client_row['client_name'];
 }
 
-// 2. Proses penghantaran borang tempahan (Booking Submission)
+// 2. Proses penghantaran order form (Booking Submission)
 $booking_submitted = false;
 $msg_toast = "";
 
@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     }
 }
 
-// 3. Ambil data senarai dewan (Venues) beserta pakej pertama untuk dipaparkan di web
+// 3. Ambil data senarai dewan (Venues) serta pakej pertama untuk dipaparkan di web
 $venues_list = [];
 $venue_sql = "SELECT v.*, p.package_name, p.package_price, p.package_id 
               FROM venue v 
@@ -75,7 +75,7 @@ if ($pkg_result) {
     }
 }
 
-// 5. Ambil data senarai tempahan milik klien ini (My Bookings)
+// 5. Ambil data senarai tempahan klien (My Bookings)
 $my_bookings = [];
 $booking_sql = "SELECT b.*, v.venue_name, p.package_name 
                 FROM booking b
@@ -951,7 +951,7 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
 </div>
 
 <script>
-    // Menyimpan data maklumat pakej daripada pangkalan data PHP ke format JSON JavaScript
+    //simpan maklumat pakej dri PHP ke javascript
     const dbPackages = <?php echo json_encode($packages_details); ?>;
 
     function switchTab(tabType) {
@@ -1017,7 +1017,7 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
         }
     }
 
-    // Fungsi submit kini menggunakan submit borang HTML POST ke PHP secara direct
+    // submit guna form HTML POST ke PHP direct
     function submitCustomerBooking() {
         const date = document.getElementById('book-date').value;
         const guests = document.getElementById('book-guests').value;
@@ -1191,7 +1191,7 @@ function openGallery(venueName) {
         
         }
 
-        // Cetak animasi toast jika pendaftaran tempahan berjaya dilakukan melalui PHP
+        // print animation klau order berjaya guna php
         <?php if ($booking_submitted): ?>
             triggerToast('<?php echo $msg_toast; ?>');
         <?php endif; ?>
