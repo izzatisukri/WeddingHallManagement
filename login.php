@@ -1,34 +1,17 @@
 <?php
+session_start();
 
+// Anda boleh menambah logik pemprosesan borang PHP di sini jika mahu mengesahkan kata laluan melalui database
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $email = strtolower(trim($_POST['email']));
-    $password = $_POST['password'];
-
-    if (strpos($email, "admin") !== false) {
-
-        header("Location: admin_dashboard.php");
-        exit();
-
-    } elseif (strpos($email, "owner") !== false) {
-
-        header("Location: venue_owner.php");
-        exit();
-
-    } else {
-
-        header("Location: client.php");
-        exit();
-    }
+    // Proses pengesahan pelayan (server-side) boleh diletakkan di sini
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login Account</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Account</title>
 
 <style>
 * {
@@ -39,132 +22,239 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%);
-    height: 100vh;
+    background: radial-gradient(circle at center, #7d0552 0%, #520131 70%, #2b0019 100%); 
+    height: 100vh; 
+    width: 100vw;
     display: flex;
-    align-items: center;
+    align-items: center; 
     justify-content: center;
+    overflow: hidden; 
     padding: 20px;
 }
 
-.container{
-    text-align:center;
-    width:100%;
-    max-width:580px;
+.container {
+    text-align: center;
+    width: 100%;
+    max-width: 580px; 
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.logo{
-    width:210px;
-    margin-bottom:12px;
+.logo-container {
+    margin-bottom: 8px;
+    width: 100%;
+    animation: fadeInDown 0.8s ease-out;
 }
 
-.title{
-    color:white;
-    margin-bottom:22px;
-    font-size: 22px;
+.logo {
+    width: 100%;
+    max-width: 220px; 
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0px 4px 8px rgba(255, 255, 255, 0.1));
 }
 
-.form-card{
-    background:#DCDCDC;
-    padding:38px; 
-    border-radius:18px;
-    box-shadow: 0 10px 22px rgba(0,0,0,0.28); 
-}
-
-.form-group{
-    margin-bottom:20px; 
-}
-
-.form-group label{
-    display:block;
-    margin-bottom:10px; 
-    font-weight:600; 
-    font-size: 14px; 
-}
-
-.form-group input{
-    width:100%;
-    padding:13px; 
-    border-radius:10px; 
-    border:1px solid #ccc;
-    font-size: 14px;
-}
-
-.btn-login{
-    width:100%;
-    padding:15px; 
-    background:#710349;
-    color:white;
-    border:none;
-    border-radius:10px; 
-    cursor:pointer;
-    margin-top:12px; 
-    font-size: 15px; 
+.title {
+    color: #ffffff;
+    font-size: 26px; 
+    margin: 5px 0 25px 0; 
     font-weight: 600; 
-    transition: 0.2s ease;
+    letter-spacing: 0.8px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    animation: fadeInDown 0.8s ease-out;
 }
 
-.btn-login:hover{
-    background:#540236;
-    transform: scale(1.03);
+.form-card {
+    background-color: #DCDCDC;
+    border: 1px solid #DCDCDC;
+    border-radius: 24px; 
+    padding: 35px 45px; 
+    text-align: left;
+    box-shadow: 
+        0px 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0px 20px 40px -10px rgba(0, 0, 0, 0.4); 
+    width: 100%;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.footer-links{
-    margin-top:20px; 
-    text-align:center;
-    font-size: 13px;
+.form-group {
+    margin-bottom: 18px;
 }
 
-.footer-links a{
-    color:#710349;
-    text-decoration:none;
-    font-weight: 500; 
+.form-group label {
+    display: block;
+    font-size: 13.5px; 
+    color: #2c2c2c;
+    margin-bottom: 8px; 
+    font-weight: bold;
+    letter-spacing: 0.3px;
 }
 
-.footer-links a:hover{
-    text-decoration:underline;
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 13px 16px; 
+    border: 1.5px solid #e2e8f0; 
+    border-radius: 10px; 
+    font-size: 14.5px; 
+    color: #1a1a1a;
+    background-color: #f8fafc; 
+    outline: none;
+    font-family: inherit; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #710349;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(113, 3, 73, 0.15); 
+}
+
+.form-group select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='%23710349' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 20px;
+    padding-right: 45px;
+}
+
+.form-group input::placeholder {
+    color: #94a3b8;
+    font-size: 13.5px;
+}
+
+.btn-login {
+    width: 100%;
+    background-color: #710349;
+    color: white;
+    border: none;
+    border-radius: 10px; 
+    padding: 14px; 
+    font-size: 15px;
+    cursor: pointer;
+    text-transform: uppercase;
+    margin-top: 8px;
+    margin-bottom: 18px; 
+    letter-spacing: 2px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(113, 3, 73, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-login:hover {
+    background-color: #540236;
+    box-shadow: 0 6px 20px rgba(113, 3, 73, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-login:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 8px rgba(113, 3, 73, 0.4);
+}
+
+.footer-links {
+    text-align: center;
+    font-size: 13.5px;
+    color: #64748b;
+}
+
+.footer-links a {
+    color: #710349;
+    text-decoration: none;
+    font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+.footer-links a.register-accent {
+    color: #710349;
+    position: relative;
+}
+
+.footer-links a:hover {
+    color: #4a002a;
+    text-decoration: underline;
+}
+
+.footer-links .separator {
+    margin: 0 10px;
+    color: #cbd5e1;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 </style>
 
 </head>
-
 <body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="images/wedding_logo.png" alt="Wedding Logo" class="logo">
+        </div>
 
-<div class="container">
+        <h2 class="title">Login to Your Account</h2>
 
-    <img src="images/wedding_logo.png" class="logo">
+        <div class="form-card">
+            <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="customer@gmail.com" required>
+                </div>
 
-    <h2 class="title">Login to Your Account</h2>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
 
-    <div class="form-card">
+                <button type="submit" class="btn-login">LOGIN</button>
 
-        <form method="POST" action="">
-
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" placeholder="Enter email address" required>
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Enter password" required>
-            </div>
-
-            <button type="submit" class="btn-login">
-                LOGIN
-            </button>
-
-            <div class="footer-links">
-                <a href="reset.php">Forgot Password</a> |
-                Don't have account?
-                <a href="register.php">Register here</a>
-            </div>
-
-        </form>
-
+                <div class="footer-links">
+                    <a href="reset.html">Forgot Password</a>
+                    <span class="separator">|</span>
+                    <span>Don't have an account? <a href="register.html" class="register-accent">Register here</a></span>
+                </div>
+            </form>
+        </div>
     </div>
 
-</div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            
+            const email = document.getElementById('email').value.toLowerCase();
 
+            if (email.includes('admin')) {
+                window.location.href = 'admin_dashboard.html';
+            } else if (email.includes('owner')) {
+                window.location.href = 'venue_owner.html';
+            } else {
+                window.location.href = 'client.html';
+            }
+        });
+    </script>
 </body>
 </html>
