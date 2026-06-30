@@ -9,7 +9,6 @@ if (!isset($_SESSION['owner_id'])) {
 }
 $owner_id = $_SESSION['owner_id'];
 
-// Ambil nama owner yang sedang login dari database
 $owner_name = "Venue Owner";
 $owner_query = "SELECT owner_name FROM venue_owner WHERE owner_id = $owner_id LIMIT 1";
 $owner_result = mysqli_query($conn, $owner_query);
@@ -33,7 +32,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         move_uploaded_file($_FILES['v_images']['tmp_name'][0], $target_dir . $venue_image_filename);
     }
 
-    // Proses Muat Naik Sijil SSM (v_certificate)
     if (isset($_FILES['v_certificate']) && $_FILES['v_certificate']['error'] == 0) {
         $ssm_file_filename = time() . '_' . basename($_FILES['v_certificate']['name']);
         $target_dir = "images/";
@@ -47,7 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
 }
 
-// Tambahan Logik PHP: Edit Venue & Owner Name
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit_venue') {
     $edit_v_id = intval($_POST['edit_venue_id']);
     $edit_v_owner = mysqli_real_escape_string($conn, $_POST['edit_v_owner']); // Ambil nama owner baru
@@ -56,7 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $edit_v_capacity = intval($_POST['edit_v_capacity']);
     $edit_v_ssm = mysqli_real_escape_string($conn, $_POST['edit_v_ssm']);
 
-    // Ambil fail sedia ada dari pangkalan data dahulu jika user tidak muat naik fail baru
     $current_venue_res = mysqli_query($conn, "SELECT venue_image, venue_ssm_file FROM venue WHERE venue_id = $edit_v_id");
     $current_venue = mysqli_fetch_assoc($current_venue_res);
     $venue_image_filename = $current_venue['venue_image'];
@@ -74,11 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         move_uploaded_file($_FILES['edit_v_certificate']['tmp_name'], $target_dir . $ssm_file_filename);
     }
 
-    // Kemaskini nama owner dalam jadual venue_owner
     $update_owner = "UPDATE venue_owner SET owner_name = '$edit_v_owner' WHERE owner_id = $owner_id";
     mysqli_query($conn, $update_owner);
 
-    // Kemaskini data venue
     $update_venue = "UPDATE venue SET venue_name = '$edit_v_name', venue_location = '$edit_v_address', venue_capacity = $edit_v_capacity, venue_ssm = '$edit_v_ssm', venue_ssm_file = '$ssm_file_filename', venue_image = '$venue_image_filename' WHERE venue_id = $edit_v_id AND owner_id = $owner_id";
     if (mysqli_query($conn, $update_venue)) {
         $toast_message = "Venue Updated Successfully!";
@@ -753,13 +747,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                             $ssm_file_path = "images/" . $v_row['venue_ssm_file'];
                             echo "<td><a href='javascript:void(0)' onclick=\"openImageModal('$ssm_file_path')\" style='color: #710349; font-weight: 600; text-decoration: underline;'>" . htmlspecialchars($v_row['venue_ssm']) . "</a></td>";
                             
-                            // Logik paparan Status Warna Tulisan Sahaja secara Auto
                             $v_status = isset($v_row['venue_status']) ? $v_row['venue_status'] : 'Pending'; 
-                            $status_color = '#d69e2e'; // Pending (Kuning)
+                            $status_color = '#d69e2e';
                             if (strcasecmp($v_status, 'Approved') == 0) {
-                                $status_color = '#38a169'; // Approved (Hijau)
+                                $status_color = '#38a169';
                             } elseif (strcasecmp($v_status, 'Rejected') == 0) {
-                                $status_color = '#e53e3e'; // Rejected (Merah)
+                                $status_color = '#e53e3e';
                             }
                             echo "<td style='color: $status_color; font-weight: 700;'>" . htmlspecialchars($v_status) . "</td>";
 

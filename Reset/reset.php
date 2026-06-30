@@ -12,7 +12,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['step']) && $_POST['ste
 
     if ($new_password === $confirm_password) {
         
-        // 1. Memeriksa sama ada emel wujud menggunakan Prepared Statement (Lebih selamat daripada SQL Injection)
         $check_email = "SELECT client_email FROM client WHERE client_email = ?";
         $stmt_check = mysqli_prepare($conn, $check_email);
         
@@ -23,11 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['step']) && $_POST['ste
 
             if (mysqli_stmt_num_rows($stmt_check) > 0) {
                 
-                // 2. MENUKARKAN PASSWORD KEPADA HASH (Penyelesaian isu gagal login)
-                // Ini akan menghasilkan string rawak selamat sepanjang 60+ aksara yang sepadan dengan sistem login.php
                 $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                
-                // 3. Mengemas kini kata laluan yang telah di-hash ke dalam database
                 $update_query = "UPDATE client SET client_password = ? WHERE client_email = ?";
                 $stmt_update = mysqli_prepare($conn, $update_query);
                 
