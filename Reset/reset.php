@@ -5,29 +5,55 @@ $error_message = "";
 $success_message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['step']) && $_POST['step'] == '2') {
-    $email = mysqli_real_escape_string($conn, $_POST['user_email']);
-    $new_password = mysqli_real_escape_string($conn, $_POST['new_password']);
-    $confirm_password = mysqli_real_escape_string($conn, $_POST['confirm_password']);
+    // Mengambil data input dan membuang ruang kosong (whitespace) yang tidak diperlukan
+    $email = trim($_POST['user_email']);
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
 
     if ($new_password === $confirm_password) {
-        // Memeriksa sama ada emel tersebut wujud dalam jadual client
-        $check_email = "SELECT * FROM client WHERE client_email = '$email'";
-        $check_result = mysqli_query($conn, $check_email);
+        
+        // 1. Memeriksa sama ada emel wujud menggunakan Prepared Statement (Lebih selamat daripada SQL Injection)
+        $check_email = "SELECT client_email FROM client WHERE client_email = ?";
+        $stmt_check = mysqli_prepare($conn, $check_email);
+        
+        if ($stmt_check) {
+            mysqli_stmt_bind_param($stmt_check, "s", $email);
+            mysqli_stmt_execute($stmt_check);
+            mysqli_stmt_store_result($stmt_check);
 
-        if (mysqli_num_rows($check_result) > 0) {
-            $update_query = "UPDATE client SET client_password = '$new_password' WHERE client_email = '$email'";
-            
-            if (mysqli_query($conn, $update_query)) {
-                echo "<script>
-                        alert('Password has been successfully updated in the database!');
-                        window.location.href = 'login.php';
-                        </script>";
-                exit();
+            if (mysqli_stmt_num_rows($stmt_check) > 0) {
+                
+                // 2. MENUKARKAN PASSWORD KEPADA HASH (Penyelesaian isu gagal login)
+                // Ini akan menghasilkan string rawak selamat sepanjang 60+ aksara yang sepadan dengan sistem login.php
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                
+                // 3. Mengemas kini kata laluan yang telah di-hash ke dalam database
+                $update_query = "UPDATE client SET client_password = ? WHERE client_email = ?";
+                $stmt_update = mysqli_prepare($conn, $update_query);
+                
+                if ($stmt_update) {
+                    mysqli_stmt_bind_param($stmt_update, "ss", $hashed_password, $email);
+                    
+                    if (mysqli_stmt_execute($stmt_update)) {
+                        echo "<script>
+                                alert('Password has been successfully updated in the database!');
+                                window.location.href = 'login.php';
+                              </script>";
+                        exit();
+                    } else {
+                        $error_message = "Failed to update password. Please try again.";
+                    }
+                    mysqli_stmt_close($stmt_update);
+                } else {
+                    $error_message = "Database error: Unable to prepare update statement.";
+                }
+                
             } else {
-                $error_message = "Failed to update password. Please try again.";
+                $error_message = "Email address not found in our records.";
             }
+            mysqli_stmt_close($stmt_check);
         } else {
-            $error_message = "Email address not found in our records.";
+            $error_message = "Database error: Unable to prepare verification statement.";
         }
     } else {
         $error_message = "Passwords do not match!";
@@ -87,7 +113,7 @@ body {
 .title {
     color: #ffffff;
     font-size: 26px; 
-    margin: 5px 0 25px 0; 
+    margin: 5px 0 25px 0;
     font-weight: 600;
     letter-spacing: 0.8px;
     text-shadow: 0 2px 10px #2b0019;
@@ -95,7 +121,7 @@ body {
 }
 
 .form-card {
-    background-color: #DCDCDC; 
+    background-color: #DCDCDC;
     border: 1px solid #DCDCDC; 
     border-radius: 24px; 
     padding: 35px 45px; 
@@ -129,7 +155,7 @@ body {
     display: block;
     font-size: 13.5px; 
     color: #2c2c2c;
-    margin-bottom: 6px; 
+    margin-bottom: 6px;
     font-weight: bold;
     letter-spacing: 0.3px;
 }
@@ -147,7 +173,7 @@ body {
     padding: 13px 16px; 
     border: 1.5px solid #e2e8f0; 
     border-radius: 10px; 
-    font-size: 14.5px; 
+    font-size: 14.5px;
     color: #1a1a1a;
     background-color: #f8fafc; 
     outline: none;
@@ -158,7 +184,7 @@ body {
 .form-group input:focus {
     border-color: #710349;
     background-color: #ffffff;
-    box-shadow: 0 0 0 4px #f1e6ed; 
+    box-shadow: 0 0 0 4px #f1e6ed;
 }
 
 .btn-action {
@@ -226,7 +252,7 @@ body {
             <p id="instruction-text" class="instruction">Enter your registered email address to find your account.</p>
 
             <?php if(!empty($error_message)): ?>
-                <p style="color: #e53e3e; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px;"><?php echo $error_message; ?></p>
+                 <p style="color: #e53e3e; text-align: center; font-weight: bold; margin-bottom: 15px; font-size: 14px;"><?php echo $error_message; ?></p>
             <?php endif; ?>
 
             <form id="resetForm" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST">
@@ -235,25 +261,25 @@ body {
                 <input type="hidden" name="user_email" id="hidden-email" value="">
 
                 <div class="form-group" id="email-section">
-                    <label for="email">Email Address</label>
+                     <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" placeholder="customer@gmail.com" required>
                 </div>
 
                 <div id="password-section">
                     <div class="form-group">
-                        <label for="new-password">New Password</label>
+                         <label for="new-password">New Password</label>
                         <span class="password-hint">* Must be at least 6 characters with uppercase, lowercase, and a symbol.</span>
                         <input 
                             type="password" 
                             id="new-password" 
                             name="new_password"
                             placeholder="Create a password">
-                    </div>
+                     </div>
 
                     <div class="form-group">
                         <label for="confirm-password">Confirm New Password</label>
                         <input type="password" id="confirm-password" name="confirm_password" placeholder="Re-enter password">
-                    </div>
+                   </div>
                 </div>
 
                 <button type="submit" id="submit-btn" class="btn-action">Next</button>
@@ -271,14 +297,12 @@ body {
         const passwordSection = document.getElementById('password-section');
         const submitBtn = document.getElementById('submit-btn');
         const instructionText = document.getElementById('instruction-text');
-        
-        // Input elemen tambahan untuk penghantaran data PHP
         const phpStep = document.getElementById('php-step');
         const hiddenEmail = document.getElementById('hidden-email');
         const emailInput = document.getElementById('email');
 
         let currentStep = 1;
-
+        
         resetForm.addEventListener('submit', function(event) {
             if (currentStep === 1) {
                 event.preventDefault();
@@ -287,7 +311,7 @@ body {
 
                 emailSection.style.display = 'none';
                 passwordSection.style.display = 'block';
-                
+            
                 instructionText.innerHTML = '<span style="color: #710349; font-weight: bold;">Account found.</span> Please enter your new password.';
                 
                 setTimeout(() => {
