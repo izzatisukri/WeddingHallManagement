@@ -1,9 +1,7 @@
 <?php
 session_start();
 
-// Anda boleh menambah logik pemprosesan borang PHP di sini jika mahu mengesahkan kata laluan melalui database
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Proses pengesahan pelayan (server-side) boleh diletakkan di sini
 }
 ?>
 <!DOCTYPE html>
@@ -233,9 +231,9 @@ body {
                 <button type="submit" class="btn-login">LOGIN</button>
 
                 <div class="footer-links">
-                    <a href="reset.html">Forgot Password</a>
+                    <a href="reset.php">Forgot Password</a>
                     <span class="separator">|</span>
-                    <span>Don't have an account? <a href="register.html" class="register-accent">Register here</a></span>
+                    <span>Don't have an account? <a href="register.php" class="register-accent">Register here</a></span>
                 </div>
             </form>
         </div>
@@ -248,11 +246,11 @@ body {
             const email = document.getElementById('email').value.toLowerCase();
 
             if (email.includes('admin')) {
-                window.location.href = 'admin_dashboard.html';
+                window.location.href = 'admin_dashboard.php';
             } else if (email.includes('owner')) {
-                window.location.href = 'venue_owner.html';
+                window.location.href = 'venue_owner.php';
             } else {
-                window.location.href = 'client.html';
+                window.location.href = 'client.php';
             }
         });
     </script>
