@@ -3,11 +3,24 @@
 include('db_connection.php');
 
 
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_admin'])) {
+    $target_venue_id = mysqli_real_escape_string($conn, $_POST['venue_id']);
+    $action_type = mysqli_real_escape_string($conn, $_POST['action_admin']); 
+    
+    
+    $update_query = "UPDATE venue SET venue_status = '$action_type' WHERE venue_id = '$target_venue_id'";
+    mysqli_query($conn, $update_query);
+    
+    
+    $toast_backend_message = "Venue status successfully updated to " .
+    ucfirst($action_type) . "!";
+}
+
+
 $query = "SELECT v.*, vo.owner_name, a.admin_id 
           FROM venue v
           LEFT JOIN venue_owner vo ON v.owner_id = vo.owner_id
           LEFT JOIN admin a ON v.admin_id = a.admin_id";
-
 $result = mysqli_query($conn, $query);
 ?>
 <!DOCTYPE html>
@@ -409,10 +422,18 @@ td:last-child {
     border-color: #b2f5ea !important;
 }
 
+/* BETULKAN DI SINI: Letak titik (.) dan !important */
 .select-rejected {
     background-color: #fff5f5 !important;
     color: #e53e3e !important;
     border-color: #fed7d7 !important;
+}
+
+/* BETULKAN DI SINI: Letak !important */
+.select-pending {
+    background-color: #fefcbf !important;
+    color: #b7791f !important;
+    border-color: #fef3c7 !important;
 }
 
 .modal-box-view-image {
@@ -539,21 +560,25 @@ td:last-child {
                     if (mysqli_num_rows($result) > 0) {
                         while ($row = mysqli_fetch_assoc($result)) {
                             
+                            $venue_id = $row['venue_id'];
                             $owner_name = htmlspecialchars($row['owner_name']);
                             $venue_name = htmlspecialchars($row['venue_name']);
                             $venue_location = htmlspecialchars($row['venue_location']);
                             $venue_capacity = number_format($row['venue_capacity']);
                             $venue_image = htmlspecialchars($row['venue_image']);
                             $venue_ssm = htmlspecialchars($row['venue_ssm']);
+                            $venue_ssm_file = htmlspecialchars($row['venue_ssm_file']);
                             
-                            
-                            $venue_ssm_file = htmlspecialchars($row['venue_ssm_file']); 
+                            $venue_status = isset($row['venue_status']) ? strtolower($row['venue_status']) : 'pending';
 
-                            
-                            $status_class = 'select-approved';
-                            if (strtolower($venue_ssm) == 'rejected') { 
-                                $status_class = 'select-rejected';
-                            }
+
+if ($venue_status == 'rejected') {
+    $status_class = 'select-rejected';
+} elseif ($venue_status == 'pending') {
+    $status_class = 'select-pending';
+} else {
+    $status_class = 'select-approved';
+}
                     ?>
                     <tr data-package="basic">
                         <td><?php echo $owner_name; ?></td>
@@ -561,18 +586,22 @@ td:last-child {
                         <td><?php echo $venue_location; ?></td>
                         <td><?php echo $venue_capacity; ?></td>
                         <td>
-                            <button class="btn-view" onclick="openImageModal(['<?php echo $venue_image; ?>'], '<?php echo $venue_name; ?>', false)">View</button>
+                            <button class="btn-view" onclick="openImageModal(['images/<?php echo $venue_image; ?>'], '<?php echo $venue_name; ?>', false)">View</button>
                         </td>
                         <td>
-                            <a href="javascript:void(0)" onclick="openImageModal(['<?php echo $venue_ssm_file ? $venue_ssm_file : 'images/ssmCert.jpg'; ?>'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;">
+                            <a href="javascript:void(0)" onclick="openImageModal(['images/<?php echo $venue_ssm_file ? $venue_ssm_file : 'ssmCert.jpg'; ?>'], 'SSM Certificate', true)" style="color: #710349; font-weight: 600; text-decoration: underline;">
                                 <?php echo $venue_ssm; ?>
                             </a>
                         </td>
                         <td>
-                            <select class="package-select select-approved" style="font-weight: 600;" onchange="updateDropdownColor(this)">
-                                <option value="approved" class="select-approved" selected>Approved</option>
-                                <option value="rejected" class="select-rejected">Rejected</option>
-                            </select>
+                            <form action="" method="POST" id="form-status-<?php echo $venue_id; ?>" style="margin:0; padding:0;">
+                                <input type="hidden" name="venue_id" value="<?php echo $venue_id; ?>">
+                            <select name="action_admin" class="package-select <?php echo $status_class; ?>" style="font-weight: 600;" onchange="submitStatusForm('<?php echo $venue_id; ?>', this)">
+                                    <option value="pending" class="select-pending" <?php if($venue_status == 'pending') echo 'selected'; ?>>Pending</option>
+                                    <option value="approved" class="select-approved" <?php if($venue_status == 'approved') echo 'selected'; ?>>Approved</option>
+                                    <option value="rejected" class="select-rejected" <?php if($venue_status == 'rejected') echo 'selected'; ?>>Rejected</option>
+                                </select>
+                            </form>
                         </td>
                     </tr>
                     <?php
@@ -626,26 +655,35 @@ td:last-child {
     let myPieChart = null; 
     let currentImages = [];
     let currentIdx = 0;
-
-    function updateDropdownColor(selectElement) {
-        if (selectElement.value === 'approved') {
-            selectElement.className = 'package-select select-approved';
-        } else {
-            selectElement.className = 'package-select select-rejected';
-        }
+    
+    function submitStatusForm(venueId, selectElement) {
+        updateDropdownColor(selectElement);
+        document.getElementById('form-status-' + venueId).submit();
     }
 
+    
+    function updateDropdownColor(selectElement) {
+    if (selectElement.value === 'approved') {
+        selectElement.className = 'package-select select-approved';
+    } else if (selectElement.value === 'rejected') {
+        selectElement.className = 'package-select select-rejected';
+    } else if (selectElement.value === 'pending') {
+        selectElement.className = 'package-select select-pending';
+    } else {
+        selectElement.className = 'package-select';
+    }
+}
+
+    
     function openImageModal(imageArray, title, isSSM) {
         currentImages = imageArray;
         currentIdx = 0;
         document.getElementById('img-title').textContent = title;
         document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
-        document.getElementById('img-counter').textContent = isSSM ?
-        "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
+        document.getElementById('img-counter').textContent = isSSM ? "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
         
         
-        const navStyle = isSSM ?
-        'none' : 'flex';
+        const navStyle = isSSM ? 'none' : 'flex';
         document.getElementById('btn-prev').style.display = navStyle;
         document.getElementById('btn-next').style.display = navStyle;
         
@@ -665,7 +703,6 @@ td:last-child {
         const listView = document.getElementById('view-list');
         const subChart = document.getElementById('sub-chart');
         const subList = document.getElementById('sub-list');
-
         if (viewType === 'chart') {
             chartView.style.display = 'block';
             listView.style.display = 'none';
@@ -690,7 +727,6 @@ td:last-child {
                 ownerCounts[ownerName] = (ownerCounts[ownerName] || 0) + 1;
             }
         });
-
         const labels = Object.keys(ownerCounts);
         const data = Object.values(ownerCounts);
 
@@ -739,6 +775,7 @@ td:last-child {
     }
 
     function closeModal(modalId) {
+        document.getElementById(modalId).style.none = 'none';
         document.getElementById(modalId).style.display = 'none';
     }
 
@@ -774,6 +811,13 @@ td:last-child {
             event.target.style.display = 'none';
         }
     }
+
+    // Memaparkan toast daripada backend PHP sebaik sahaja data berjaya dikemas kini
+    <?php if(isset($toast_backend_message) && !empty($toast_backend_message)): ?>
+        window.addEventListener('DOMContentLoaded', () => {
+            triggerToast("<?php echo $toast_backend_message; ?>");
+        });
+    <?php endif; ?>
 </script>
 
 </body>

@@ -1,10 +1,14 @@
 <?php
 
+session_start();
+
+
 include('db_connection.php');
 
 
 $registration_status = "";
 $message_content = "";
+$role = ""; 
 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -28,7 +32,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         
         $default_status = "Active";
-
         
         if ($role === 'admin') {
             
@@ -48,9 +51,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 } else {
                     
                     $insert_query = "INSERT INTO admin (admin_name, admin_email, admin_password, admin_role) 
-                                     VALUES ('$fullname', '$email', '$hashed_password', 'admin')";
+                                    VALUES ('$fullname', '$email', '$hashed_password', 'admin')";
                     if (mysqli_query($conn, $insert_query)) {
                         $registration_status = "success";
+                        
+                        
+                        $_SESSION['admin_id'] = mysqli_insert_id($conn);
+                        $_SESSION['admin_name'] = $fullname;
+                        $_SESSION['admin_role'] = 'admin';
                     } else {
                         $registration_status = "error";
                         $message_content = "Database error: " . mysqli_error($conn);
@@ -68,9 +76,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 
                 $insert_query = "INSERT INTO client (client_name, client_email, client_phonenum, client_password, client_role, client_status) 
-                                 VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'client', '$default_status')";
+                                VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'client', '$default_status')";
                 if (mysqli_query($conn, $insert_query)) {
                     $registration_status = "success";
+                    
+                    
+                    $_SESSION['client_id'] = mysqli_insert_id($conn);
+                    $_SESSION['client_name'] = $fullname;
+                    $_SESSION['client_role'] = 'client';
                 } else {
                     $registration_status = "error";
                     $message_content = "Database error: " . mysqli_error($conn);
@@ -87,9 +100,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             } else {
                 
                 $insert_query = "INSERT INTO venue_owner (owner_name, owner_email, owner_phonenum, owner_password, owner_role, owner_status) 
-                                 VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'venue_owner', '$default_status')";
+                                VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'venue_owner', '$default_status')";
                 if (mysqli_query($conn, $insert_query)) {
                     $registration_status = "success";
+                    
+                    
+                    $_SESSION['owner_id'] = mysqli_insert_id($conn);
+                    $_SESSION['owner_name'] = $fullname;
+                    $_SESSION['owner_role'] = 'venue_owner';
                 } else {
                     $registration_status = "error";
                     $message_content = "Database error: " . mysqli_error($conn);
@@ -263,16 +281,13 @@ body {
 }
 
 @keyframes fadeInDown {
-    from { opacity: 0;
-    transform: translateY(-15px); }
-    to { opacity: 1; transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1;
-    transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-overlay {
@@ -414,7 +429,7 @@ body {
         
         const phpStatus = "<?php echo $registration_status; ?>";
         const phpMessage = "<?php echo $message_content; ?>";
-        const chosenRole = "<?php echo $role ?? ''; ?>";
+        const chosenRole = "<?php echo $role; ?>";
 
         const modal = document.getElementById('customModal');
         const modalMessage = document.getElementById('modalMessage');
@@ -468,7 +483,6 @@ body {
                 };
                 return;
             }
-            
         });
     </script>
 </body>
