@@ -560,7 +560,7 @@ body {
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
-        }
+        }  
     }
 </script> 
 
