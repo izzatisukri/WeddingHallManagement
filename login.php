@@ -1,7 +1,86 @@
 <?php
 session_start();
 
+include('db_connection.php');
+
+$error_message = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $password = $_POST['password'];
+    $role = mysqli_real_escape_string($conn, $_POST['role']);
+
+    if ($role === 'client') {
+        $query = "SELECT * FROM client WHERE client_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['client_password'])) {
+
+                $status = isset($row['client_status']) ? $row['client_status'] : (isset($row['status']) ? $row['status'] : 'Active');
+                if (strtolower(trim($status)) === 'suspended') {
+                    $error_message = "Your account has been suspended!";
+                } else {
+                    $_SESSION['client_id'] = $row['client_id'];
+                    $_SESSION['role'] = 'client';
+                    $_SESSION['user_name'] = $row['client_name'];
+                    
+                    header("Location: client.php");
+                    exit();
+                }
+                
+            } else {
+                $error_message = "Incorrect password for Client account!";
+            }
+        } else {
+            $error_message = "Email not found in Client records!";
+        }
+    }
+    
+    elseif ($role === 'venue_owner') {
+        $query = "SELECT * FROM venue_owner WHERE owner_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['owner_password'])) {
+
+                $status = isset($row['owner_status']) ? $row['owner_status'] : (isset($row['status']) ? $row['status'] : 'Active');
+                if (strtolower(trim($status)) === 'suspended') {
+                    $error_message = "Your account has been suspended! Please contact admin.";
+                } else {
+                    $_SESSION['owner_id'] = $row['owner_id'];
+                    $_SESSION['role'] = 'venue_owner';
+                    $_SESSION['user_name'] = $row['owner_name'];
+                    header("Location: venue_owner.php");
+                    exit();
+                }
+                
+            } else {
+                $error_message = "Incorrect password for Venue Owner account!";
+            }
+        } else {
+            $error_message = "Email not found in Venue Owner records!";
+        }
+    }
+
+    elseif ($role === 'admin') {
+        $query = "SELECT * FROM admin WHERE admin_email = '$email'";
+        $result = mysqli_query($conn, $query);
+        
+        if ($row = mysqli_fetch_assoc($result)) {
+            if (password_verify($password, $row['admin_password'])) {
+                $_SESSION['user_id'] = $row['admin_id'];
+                $_SESSION['role'] = 'admin';
+                $_SESSION['user_name'] = $row['admin_name'];
+
+                header("Location: admin_dashboard.php");
+                exit();
+            } else {
+                $error_message = "Incorrect password for Admin account!";
+            }
+        } else {
+            $error_message = "Email not found in Admin records!";
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -56,7 +135,7 @@ body {
 
 .title {
     color: #ffffff;
-    font-size: 26px; 
+    font-size: 26px;
     margin: 5px 0 25px 0; 
     font-weight: 600; 
     letter-spacing: 0.8px;
@@ -68,11 +147,11 @@ body {
     background-color: #DCDCDC;
     border: 1px solid #DCDCDC;
     border-radius: 24px; 
-    padding: 35px 45px; 
+    padding: 35px 45px;
     text-align: left;
     box-shadow: 
         0px 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0px 20px 40px -10px rgba(0, 0, 0, 0.4); 
+        0px 20px 40px -10px rgba(0, 0, 0, 0.4);
     width: 100%;
     animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -96,7 +175,7 @@ body {
     padding: 13px 16px; 
     border: 1.5px solid #e2e8f0; 
     border-radius: 10px; 
-    font-size: 14.5px; 
+    font-size: 14.5px;
     color: #1a1a1a;
     background-color: #f8fafc; 
     outline: none;
@@ -108,7 +187,7 @@ body {
 .form-group select:focus {
     border-color: #710349;
     background-color: #ffffff;
-    box-shadow: 0 0 0 4px rgba(113, 3, 73, 0.15); 
+    box-shadow: 0 0 0 4px rgba(113, 3, 73, 0.15);
 }
 
 .form-group select {
@@ -125,6 +204,17 @@ body {
 .form-group input::placeholder {
     color: #94a3b8;
     font-size: 13.5px;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    border: 1px solid #f5c6cb;
+    font-weight: 500;
 }
 
 .btn-login {
@@ -185,25 +275,13 @@ body {
 }
 
 @keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-15px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
 
@@ -217,6 +295,10 @@ body {
         <h2 class="title">Login to Your Account</h2>
 
         <div class="form-card">
+            <?php if (!empty($error_message)): ?>
+                <div class="alert-danger"><?php echo $error_message; ?></div>
+            <?php endif; ?>
+
             <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="POST" id="loginForm">
                 <div class="form-group">
                     <label for="email">Email Address</label>
@@ -226,6 +308,16 @@ body {
                 <div class="form-group">
                     <label for="password">Password</label>
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Login As</label>
+                    <select id="role" name="role" required>
+                        <option value="" disabled selected>Select Your Role</option>
+                        <option value="client">Client</option>
+                        <option value="venue_owner">Venue Owner</option>
+                        <option value="admin">Admin</option>
+                    </select>
                 </div>
 
                 <button type="submit" class="btn-login">LOGIN</button>
@@ -238,21 +330,5 @@ body {
             </form>
         </div>
     </div>
-
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
-            event.preventDefault(); 
-            
-            const email = document.getElementById('email').value.toLowerCase();
-
-            if (email.includes('admin')) {
-                window.location.href = 'admin_dashboard.php';
-            } else if (email.includes('owner')) {
-                window.location.href = 'venue_owner.php';
-            } else {
-                window.location.href = 'client.php';
-            }
-        });
-    </script>
 </body>
 </html>
