@@ -263,29 +263,52 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Memperbaiki bahagian bars-area supaya boleh slide/scroll horizontal apabila list dewan terlalu banyak */
 .bars-area {
     position: absolute;
     left: 25px;
-    bottom: 50px;
+    bottom: 0px; /* Diturunkan sedikit ke bawah bagi ruang teks tidak terpotong */
     width: calc(100% - 25px);
-    height: 250px;
+    height: 290px; /* Tingkatkan height keseluruhan kontainer bagi menampung teks nama dewan */
     display: flex;
-    gap: 60px;
+    gap: 40px;
     padding-left: 20px;
+    padding-bottom: 40px; /* Jarak untuk label di bawah */
     align-items: flex-end;
+    overflow-x: auto; /* Membenarkan slide/scroll ke kanan dan kiri */
+    white-space: nowrap;
 }
 
+/* Mengemaskan reka bentuk scrollbar pada bahagian bawah graf dewan */
+.bars-area::-webkit-scrollbar {
+    height: 6px;
+}
+.bars-area::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+.bars-area::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+.bars-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Memastikan wrapper bar mempunyai kelebaran tetap supaya tidak kemek apabila di-scroll */
 .bar-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 140px;
-    height: 100%;
+    width: 120px; 
+    min-width: 120px; /* Wajib diletakkan supaya saiz ruangan konsisten */
+    height: 250px; /* Kekalkan tinggi bar graf asal */
     justify-content: flex-end;
+    position: relative;
 }
 
 .bar {
-    width: 100%;
+    width: 45px; /* Kurangkan lebar sikit supaya lebih seimbang dan kemas */
     background: linear-gradient(to top, #3b42ff, #5c62ff);
     height: 0%;
     transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -295,13 +318,14 @@ body {
 
 .bar-label {
     position: absolute;
-    bottom: -40px;
-    font-size: 13px;
+    bottom: -35px;
+    font-size: 11px; /* Kecilkan sedikit tulisan supaya teks panjang muat dengan elok */
     color: #e2e8f0;
     text-align: center;
-    line-height: 1.4;
-    width: 150px;
-    white-space: normal;
+    line-height: 1.3;
+    width: 100%;
+    white-space: normal; /* Benarkan nama dewan berpindah ke baris baru secara automatik */
+    word-wrap: break-word;
 }
 
 .modal-overlay {
@@ -438,6 +462,10 @@ body {
                     <option value="2024">2024</option>
                     <option value="2025">2025</option>
                     <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
                 </select>
                 
                 <button class="btn-premium" onclick="triggerReportGeneration()">Generate Report</button>
@@ -507,7 +535,7 @@ body {
     }
 
     function confirmLogout() {
-        window.location.href = 'login.html';
+        window.location.href = 'login.php';
     }
 
     function triggerReportGeneration() {
@@ -560,9 +588,9 @@ body {
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
-        }  
+        }
     }
-</script> 
+</script>
 
 </body>
-</html>  
+</html>
