@@ -5,12 +5,8 @@ include('db_connection.php');
 
 // Contoh semakan login klien (pastikan $_SESSION['client_id'] telah diisytiharkan semasa login)
 if (!isset($_SESSION['client_id'])) {
-    // Anda boleh aktifkan header redirect jika perlu:
-    // header("Location: login.php");
-    // exit();
-    
-    // Sebagai contoh fallback jika sesi belum set semasa fasa pembangunan:
-    $_SESSION['client_id'] = 1; 
+    header("Location: login.php");
+    exit();
 }
 
 $client_id = $_SESSION['client_id'];
@@ -24,10 +20,9 @@ if ($client_result && mysqli_num_rows($client_result) > 0) {
     $client_name = $client_row['client_name'];
 }
 
-// 2. Proses penghantaran order form (Booking Submission)
+// 2. Proses penghantaran borang tempahan (Booking Submission)
 $booking_submitted = false;
 $msg_toast = "";
-
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_booking') {
     $venue_id = mysqli_real_escape_string($conn, $_POST['book_venue_id']);
     // Mencari package_id pertama yang sepadan dengan venue tersebut sebagai default pakej
@@ -40,23 +35,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     $booking_date = date('Y-m-d');
     $bookingstatus = "Pending";
 
-    // Masukkan data ke dalam jadual booking berdasarkan ERD
-    $insert_query = "INSERT INTO booking (client_id, venue_id, package_id, booking_date, event_date, num_of_guests, bookingstatus) 
-                     VALUES ('$client_id', '$venue_id', $package_id, '$booking_date', '$event_date', '$num_of_guests', '$bookingstatus')";
-    
-    if (mysqli_query($conn, $insert_query)) {
-        $booking_submitted = true;
-        $msg_toast = "Booking submitted! Waiting for owner approval.";
+    // PEMBETULAN UNTUK MENGALANG DOUBLE BOOKING:
+    // Menyemak sama ada dewan tersebut sudah ditempah oleh sesiapa sahaja pada tarikh yang sama
+    // ATAU klien ini sudah mempunyai tempahan lain pada tarikh yang sama.
+    $check_duplicate_query = "SELECT * FROM booking 
+                              WHERE (venue_id = '$venue_id' AND event_date = '$event_date' AND bookingstatus != 'Rejected') 
+                              OR (client_id = '$client_id' AND event_date = '$event_date' AND bookingstatus != 'Rejected')";
+    $check_duplicate_res = mysqli_query($conn, $check_duplicate_query);
+
+    if ($check_duplicate_res && mysqli_num_rows($check_duplicate_res) > 0) {
+        $booking_submitted = false;
+        $msg_toast = "Error: The venue is already booked for this date, or you already have a booking on this date!";
     } else {
-        $msg_toast = "Error: " . mysqli_error($conn);
+        // Masukkan data ke dalam jadual booking berdasarkan ERD
+        $insert_query = "INSERT INTO booking (client_id, venue_id, package_id, booking_date, event_date, num_of_guests, bookingstatus) 
+                         VALUES ('$client_id', '$venue_id', $package_id, '$booking_date', '$event_date', '$num_of_guests', '$bookingstatus')";
+        if (mysqli_query($conn, $insert_query)) {
+            $booking_submitted = true;
+            $msg_toast = "Booking submitted! Waiting for owner approval.";
+        } else {
+            $msg_toast = "Error: " . mysqli_error($conn);
+        }
     }
 }
 
-// 3. Ambil data senarai dewan (Venues) serta pakej pertama untuk dipaparkan di web
+// 3. Ambil data senarai dewan (Venues) beserta pakej pertama untuk dipaparkan di web
+// DI SINI KITA TAMBAH: WHERE v.venue_status = 'approved' supaya pending & rejected tidak akan appear
 $venues_list = [];
 $venue_sql = "SELECT v.*, p.package_name, p.package_price, p.package_id 
               FROM venue v 
               LEFT JOIN package p ON v.venue_id = p.venue_id 
+              WHERE v.venue_status = 'approved'
               GROUP BY v.venue_id";
 $venue_result = mysqli_query($conn, $venue_sql);
 if ($venue_result) {
@@ -75,7 +84,7 @@ if ($pkg_result) {
     }
 }
 
-// 5. Ambil data senarai tempahan klien (My Bookings)
+// 5. Ambil data senarai tempahan milik klien ini (My Bookings)
 $my_bookings = [];
 $booking_sql = "SELECT b.*, v.venue_name, p.package_name 
                 FROM booking b
@@ -412,7 +421,7 @@ body {
 @keyframes modalSlideUp {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1;
-    transform: translateY(0); }
+        transform: translateY(0); }
 }
 
 @keyframes modalFadeIn {
@@ -762,7 +771,6 @@ body {
             <div class="search-filter-box">
                 <div class="section-title">Filter Options</div>
                
-
                 <form id="filter-form" onsubmit="event.preventDefault(); searchVenueMap();">
                     <div class="form-grid">
                         <div class="form-group">
@@ -771,12 +779,12 @@ body {
                             <input type="text" id="filter-area" placeholder="e.g., Telok Mas, Alor Gajah, Melaka">
                         </div>
                         <div class="form-group">
-                    
+               
          <label>Max Budget (RM)</label>
                             <input type="number" id="filter-budget" placeholder="e.g., 20000">
                         </div>
                     </div>
-              
+        
                     <button type="button" class="btn-primary" style="width: 100%;"
  onclick="searchVenueMap()">Search & Update Map</button>
                 </form>
@@ -784,34 +792,47 @@ body {
                 <div class="venue-list-wrapper" id="venue-list-container">
                     <?php if (count($venues_list) > 0): ?>
                         <?php foreach ($venues_list as $venue): ?>
-                            <div class="venue-row-card" data-area="<?php echo htmlspecialchars(strtolower($venue['venue_location'])); ?>">
+         
+                    <div class="venue-row-card" data-area="<?php echo htmlspecialchars(strtolower($venue['venue_location'])); ?>">
                                 <div class="v-details">
-                                    <h4><?php echo htmlspecialchars($venue['venue_name']); ?></h4>
-                                    <p>Full Address: <?php echo htmlspecialchars($venue['venue_location']); ?></p>
-                                    <p>Capacity: <?php echo htmlspecialchars(number_format($venue['venue_capacity'])); ?> pax</p>
+                                    <h4><?php echo htmlspecialchars($venue['venue_name']);
+?></h4>
+                                    <p>Full Address: <?php echo htmlspecialchars($venue['venue_location']);
+?></p>
+                                    <p>Capacity: <?php echo htmlspecialchars(number_format($venue['venue_capacity']));
+?> pax</p>
                                     
                                     <div class="v-price-tag">
-                                        <?php 
+                          
+               <?php 
                                         if (!empty($venue['package_name'])) {
-                                            echo htmlspecialchars($venue['package_name']) . " (RM " . number_format($venue['package_price'], 2) . ")";
-                                        } else {
-                                            echo "Price: RM " . number_format($venue['venue_price'], 2);
+                                           
+  echo htmlspecialchars($venue['package_name']) . " (RM " . number_format($venue['package_price'], 2) . ")";
+} else {
+                                            echo "Price: RM " .
+number_format($venue['venue_price'], 2);
                                         }
                                         ?>
                                     </div>
+                      
+                                    <a class="view-pic-link" onclick="openGallery('<?php echo htmlspecialchars(addslashes($venue['venue_name'])); ?>', '<?php echo htmlspecialchars(addslashes($venue['venue_image'])); ?>')">➔ view picture</a><br>
                                     
-                                    <a class="view-pic-link" onclick="openGallery('<?php echo htmlspecialchars(addslashes($venue['venue_name'])); ?>')">➔ view picture</a><br>
-                                    
-                                    <?php if (!empty($venue['package_id'])): ?>
+   
+                                  <?php if (!empty($venue['package_id'])): ?>
                                         <a class="view-pic-link" onclick="previewPackageDetails('<?php echo $venue['package_id']; ?>')">➔ view package</a>
-                                    <?php endif; ?>
+                 
+                    <?php endif;
+?>
                                 </div>
                                 <button class="btn-primary" onclick="openBookingModal('<?php echo htmlspecialchars(addslashes($venue['venue_name'])); ?>', '<?php echo $venue['venue_id']; ?>', '<?php echo htmlspecialchars(addslashes($venue['venue_location'])); ?>')">Book Venue</button>
-                            </div>
-                        <?php endforeach; ?>
+                      
+       </div>
+                        <?php endforeach;
+?>
                     <?php else: ?>
                         <div style="text-align: center; color: #a0aec0; padding: 20px;">No venues available.</div>
-                    <?php endif; ?>
+                    <?php endif;
+?>
                 </div>
       
             </div>
@@ -819,7 +840,8 @@ body {
             <div class="map-box">
                 <iframe 
                     id="map-frame"
-                    src="https://maps.google.com/maps?q=Malaysia&t=&z=6&ie=UTF8&iwloc=&output=embed" 
+                
+     src="https://maps.google.com/maps?q=Malaysia&t=&z=6&ie=UTF8&iwloc=&output=embed" 
                     allowfullscreen="" 
   
                     loading="lazy">
@@ -832,7 +854,8 @@ body {
 
 <div class="toast-notification" id="toast-global">
     <div class="toast-success-icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+     
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10 0C4.48 0 0 4.48 0 
  10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0;
  10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
@@ -845,13 +868,15 @@ body {
     <div class="modal-box-booking-new">
         <h3 class="modal-main-title">Book Venue</h3>
         
-        <div class="modal-venue-info">
+    
+     <div class="modal-venue-info">
             <h4 id="display-v-name">Dewan Serbaguna Telok Mas</h4>
             <p id="display-v-area">Telok Mas, Melaka</p>
         </div>
 
  
-        <form id="form-submit-booking" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>">
+        <form id="form-submit-booking" method="POST" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']);
+?>">
             <input type="hidden" name="action_type" value="submit_booking">
             <input type="hidden" id="book-v-name">
             <input type="hidden" id="book-venue-id" name="book_venue_id">
@@ -859,7 +884,8 @@ body {
             <div class="form-group-new">
                 <label>Full Name</label>
                 <input type="text" id="book-fullname" placeholder="Enter your full name" required>
-            </div>
+   
+          </div>
 
             <div class="form-group-new">
                 <label>Phone Number</label>
@@ -867,7 +893,8 @@ body {
             </div>
 
             <div class="form-group-new">
-                <label>Email Address</label>
+             
+    <label>Email Address</label>
    
                 <input type="email" id="book-email" placeholder="Enter your email address" required>
             </div>
@@ -875,7 +902,8 @@ body {
             <div class="form-group-new">
                 <label>Event Date</label>
                 <input type="date" id="book-date" name="book_date" required>
-            </div>
+        
+     </div>
 
        
             <div class="form-group-new">
@@ -884,7 +912,8 @@ body {
             </div>
 
             <div class="form-actions-new">
-                <button type="submit" class="btn-action btn-book-now">Booking Now</button>
+          
+       <button type="submit" class="btn-action btn-book-now">Booking Now</button>
         
                 <button type="button" class="btn-action btn-cancel-new" onclick="closeModal('modal-customer-booking')">Cancel</button>
             </div>
@@ -911,6 +940,7 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
     <div class="logout-box-container">
         <div class="logout-title">
          
+ 
     Are you sure you want to log out? You will need to login again to access the panel.
         </div>
         <div class="logout-buttons-group">
@@ -923,7 +953,8 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
 <div id="modal-image-gallery" class="modal-overlay">
     <div class="gallery-modal-box">
         <div class="gallery-img-container">
-      
+     
+  
             <button class="nav-arrow arrow-left" onclick="changeImage(-1)">❮</button>
             <img id="gallery-current-img" src="" alt="Hall Image">
             <button class="nav-arrow arrow-right" onclick="changeImage(1)">❯</button>
@@ -936,51 +967,59 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
 <div class="hidden-table-holder">
     <table id="table-user-bookings">
         <tbody>
-            <?php foreach ($my_bookings as $b_row): ?>
+     
+        <?php foreach ($my_bookings as $b_row): ?>
                 <tr>
-                    <td><?php echo htmlspecialchars($b_row['venue_name']); ?></td>
-                    <td><?php echo htmlspecialchars($b_row['package_name'] ?? 'N/A'); ?></td>
-                    <td><?php echo htmlspecialchars($b_row['event_date']); ?></td>
-                    <td><?php echo htmlspecialchars($b_row['num_of_guests']); ?> pax</td>
-                    <td><?php echo htmlspecialchars($b_row['bookingstatus']); ?></td>
-                    <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($b_row['booking_date']))); ?></td>
+                    <td><?php echo htmlspecialchars($b_row['venue_name']);
+?></td>
+                    <td><?php echo htmlspecialchars($b_row['package_name'] ?? 'N/A');
+?></td>
+                    <td><?php echo htmlspecialchars($b_row['event_date']);
+?></td>
+                    <td><?php echo htmlspecialchars($b_row['num_of_guests']);
+?> paxes</td>
+                    <td><?php echo htmlspecialchars($b_row['bookingstatus']);
+?></td>
+                    <td><?php echo htmlspecialchars(date('d/m/Y', strtotime($b_row['booking_date'])));
+?></td>
                 </tr>
-            <?php endforeach; ?>
+            <?php endforeach;
+?>
         </tbody>
     </table>
 </div>
 
 <script>
-    //simpan maklumat pakej dri PHP ke javascript
-    const dbPackages = <?php echo json_encode($packages_details); ?>;
+    // Menyimpan data maklumat pakej daripada pangkalan data PHP ke format JSON JavaScript
+    const dbPackages = <?php echo json_encode($packages_details);
+?>;
 
     function switchTab(tabType) {
         const homeNav = document.getElementById('nav-home');
         const bookingsNav = document.getElementById('nav-bookings');
-        
-        if(tabType === 'home') {
+if(tabType === 'home') {
             homeNav.classList.add('active');
             bookingsNav.classList.remove('active');
-        } else if(tabType === 'bookings') {
+} else if(tabType === 'bookings') {
             bookingsNav.classList.add('active');
             homeNav.classList.remove('active');
-        }
+}
     }
 
     function searchVenueMap() {
         const searchInput = document.getElementById('filter-area').value.trim().toLowerCase();
-        const mapFrame = document.getElementById('map-frame');
+const mapFrame = document.getElementById('map-frame');
 
         if (searchInput === '') {
             alert('Please enter an area or venue name first!');
-            return;
+return;
         }
 
         const formattedQuery = encodeURIComponent(searchInput);
         mapFrame.src = `https://maps.google.com/maps?q=${formattedQuery}%2C%20Malaysia&t=&z=14&ie=UTF8&iwloc=&output=embed`;
         
         const venueCards = document.querySelectorAll('.venue-row-card');
-        let foundCount = 0;
+let foundCount = 0;
 
         venueCards.forEach(card => {
             const venueArea = card.getAttribute('data-area').toLowerCase();
@@ -990,139 +1029,140 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
             if (venueArea.includes(searchInput) || venueName.includes(searchInput)) {
                 card.style.display = 'flex'; 
        
+ 
                 foundCount++;
             } else {
                 card.style.display = 'none'; 
             }
         });
-        if (foundCount === 0) {
+if (foundCount === 0) {
             triggerToast(`Map updated, but no venues found matching: ${document.getElementById('filter-area').value}`);
-        } else {
+} else {
             triggerToast(`Map updated & filtered: ${foundCount} venue(s) found!`);
-        }
+}
     }
 
     function openBookingModal(venueName, venueId, venueLocation) {
         document.getElementById('modal-customer-booking').style.display = 'flex';
-        document.getElementById('display-v-name').textContent = venueName;
+document.getElementById('display-v-name').textContent = venueName;
         document.getElementById('book-v-name').value = venueName;
         document.getElementById('book-venue-id').value = venueId;
         document.getElementById('display-v-area').textContent = venueLocation;
-    }
+}
 
     function closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
-        if(modalId === 'modal-my-bookings') {
+if(modalId === 'modal-my-bookings') {
             switchTab('home');
-        }
+}
     }
 
-    // submit guna form HTML POST ke PHP direct
+    // Fungsi submit kini menggunakan submit borang HTML POST ke PHP secara direct
     function submitCustomerBooking() {
         const date = document.getElementById('book-date').value;
-        const guests = document.getElementById('book-guests').value;
+const guests = document.getElementById('book-guests').value;
 
         if(date === '' || guests === '') {
             alert('Please fill in all required information!');
-            return;
+return;
         }
         document.getElementById('form-submit-booking').submit();
-    }
+}
 
     function openMyBookingsModal() {
         switchTab('bookings');
         document.getElementById('modal-booking-title').textContent = "My Booking";
-        
-        const rows = document.querySelectorAll('#table-user-bookings tbody tr');
+const rows = document.querySelectorAll('#table-user-bookings tbody tr');
         const targetDetailsContainer = document.getElementById('dynamic-booking-details');
-        if (rows.length === 0) {
+if (rows.length === 0) {
             targetDetailsContainer.innerHTML = `
                 <div class="booking-item-row" style="text-align: center; color: #a0aec0; margin-top: 10px;">
                     <em>No upcoming bookings found.</em>
                 </div>
             `;
-        } else {
+} else {
             const latestRow = rows[rows.length - 1];
-            const cells = latestRow.querySelectorAll('td');
+const cells = latestRow.querySelectorAll('td');
             
             const statusText = cells[4].textContent;
             const statusColor = statusText === 'Pending' ? '#d97706' : '#db2777';
-            targetDetailsContainer.innerHTML = `
+targetDetailsContainer.innerHTML = `
                 <div class="booking-item-row"><strong>Event Date :</strong> ${cells[2].textContent}</div>
                 <div class="booking-item-row"><strong>Package :</strong> ${cells[1].textContent}</div>
                 <div class="booking-item-row"><strong>Guest :</strong> ${cells[3].textContent.replace(' pax', '')}</div>
                 <div class="booking-item-row"><strong>Status :</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span></div>
                
+ 
                 <div class="booking-item-row"><strong>Booked On :</strong> ${cells[5].textContent}</div>
             `;
-        }
+}
         
         document.getElementById('modal-my-bookings').style.display = 'flex';
-    }
+}
 
     function previewPackageDetails(packageId) {
         switchTab('bookings');
         document.getElementById('modal-booking-title').textContent = "Package";
-        const targetDetailsContainer = document.getElementById('dynamic-booking-details');
+const targetDetailsContainer = document.getElementById('dynamic-booking-details');
         
         const pkg = dbPackages[packageId];
         
         if (pkg) {
             let inclusionsHtml = '';
-            if (pkg.package_inclusions) {
+if (pkg.package_inclusions) {
                 // Berasaskan data database, pecahkan baris sekiranya ia menggunakan koma atau new line (\n)
                 const inclusionsArray = pkg.package_inclusions.split(/[,\n]+/);
-                inclusionsArray.forEach(item => {
+inclusionsArray.forEach(item => {
                     if(item.trim() !== "") {
                         inclusionsHtml += `<div class="booking-item-row" style="padding-left: 15px; margin-bottom: 2px;">- ${item.trim()}</div>`;
                     }
                 });
-            }
+}
 
             targetDetailsContainer.innerHTML = `
                 <div class="booking-item-row"><strong>Package Name:</strong> ${pkg.package_name}</div>
                 <div class="booking-item-row"><strong>Price:</strong> RM ${parseFloat(pkg.package_price).toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
                 <div class="booking-item-row" style="margin-top: 10px;"><strong>Package Inclusions:</strong></div>
                 ${inclusionsHtml}
-            `;
+          
+   `;
         } else {
             targetDetailsContainer.innerHTML = `<div class="booking-item-row">No package details found.</div>`;
-        }
+}
         
         document.getElementById('modal-my-bookings').style.display = 'flex';
-    }
+}
 
     function openLogoutModal() {
         document.getElementById('modal-logout-confirm').style.display = 'flex';
-    }
+}
 
     function executeLogout() {
-        window.location.href = 'login.php'; 
-    }
+        window.location.href = 'login.php';
+}
 
     function triggerToast(message) {
       
         const toast = document.getElementById('toast-global');
-        if (toast) {
+if (toast) {
             toast.querySelector('span').textContent = message;
             toast.classList.add('show-toast');
-            
-            setTimeout(() => {
+setTimeout(() => {
                 toast.classList.remove('show-toast');
             }, 3000);
-   
-        }
+}
     }
 
     window.onclick = function(event) {
         if (event.target.classList.contains('modal-overlay')) {
             event.target.style.display = 'none';
-            if(event.target.id === 'modal-my-bookings') {
+if(event.target.id === 'modal-my-bookings') {
                 switchTab('home');
-            }
+}
         }
     }
 
+    // Pembolehubah asli dikekalkan bagi mengelakkan ralat kod
     const venueImages = {
         "Dewan Serbaguna Telok Mas": [
             "images/weddingVenue.jpg",
@@ -1130,45 +1170,53 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
         ],
         "Dahlia Wedding Hall": [
             "images/weddingVenue1.jpg",
-            "images/pelamin1.jpg",
+   
+          "images/pelamin1.jpg",
   
         ]
     };
-
-    let currentVenue = "";
+let currentVenue = "";
     let currentImgIndex = 0;
-function openGallery(venueName) {
+    let dynamicImgList = [];
+// PEMBETULAN UTAMA: Menggunakan folder 'images/' dinamik seperti yang anda maklumkan
+    function openGallery(venueName, databaseImage) {
         currentVenue = venueName;
-        currentImgIndex = 0;
+currentImgIndex = 0;
+        dynamicImgList = [];
+
+        // Laluan ditukar ke folder images/
+        const pathFolder = "images/";
+if (databaseImage && databaseImage.trim() !== "") {
+            dynamicImgList.push(pathFolder + databaseImage);
+} else if (venueImages[venueName]) {
+            dynamicImgList = venueImages[venueName];
+}
         
         document.getElementById('modal-image-gallery').style.display = 'flex';
         updateGalleryContent();
-    }
+}
 
     function updateGalleryContent() {
         const imgElement = document.getElementById('gallery-current-img');
-        const titleElement = document.getElementById('gallery-display-title');
-        const imagesList = venueImages[currentVenue];
+const titleElement = document.getElementById('gallery-display-title');
 
-        if (imagesList && imagesList.length > 0) {
-            imgElement.src = imagesList[currentImgIndex];
-            titleElement.textContent = `${currentVenue} (Picture ${currentImgIndex + 1} of ${imagesList.length})`;
+        if (dynamicImgList && dynamicImgList.length > 0) {
+            imgElement.src = dynamicImgList[currentImgIndex];
+titleElement.textContent = `${currentVenue} (Picture ${currentImgIndex + 1} of ${dynamicImgList.length})`;
         } else {
             imgElement.src = "https://via.placeholder.com/600x380?text=No+Image+Available";
-            titleElement.textContent = currentVenue;
+titleElement.textContent = currentVenue;
         }
     }
 
     function changeImage(direction) {
-        const imagesList = venueImages[currentVenue];
-        if (!imagesList || imagesList.length <= 1) return;
-
-        currentImgIndex += direction;
-        if (currentImgIndex >= imagesList.length) {
+        if (!dynamicImgList || dynamicImgList.length <= 1) return;
+currentImgIndex += direction;
+        if (currentImgIndex >= dynamicImgList.length) {
             currentImgIndex = 0;
-        } else if (currentImgIndex < 0) {
-            currentImgIndex = imagesList.length - 1;
-        }
+} else if (currentImgIndex < 0) {
+            currentImgIndex = dynamicImgList.length - 1;
+}
 
         updateGalleryContent();
     }
@@ -1181,18 +1229,20 @@ function openGallery(venueName) {
             targetDate.setMonth(targetDate.getMonth() + 3);
             
          
+ 
             const yyyy = targetDate.getFullYear();
             const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
             const dd = String(targetDate.getDate()).padStart(2, '0');
             
             const minDate = `${yyyy}-${mm}-${dd}`;
             
-            dateInput.setAttribute('min', minDate);
+            
+dateInput.setAttribute('min', minDate);
         
         }
 
-        // print animation klau order berjaya guna php
-        <?php if ($booking_submitted): ?>
+        // Cetak animasi toast jika pendaftaran tempahan berjaya dilakukan melalui PHP
+        <?php if ($booking_submitted || !empty($msg_toast)): ?>
             triggerToast('<?php echo $msg_toast; ?>');
         <?php endif; ?>
     });
