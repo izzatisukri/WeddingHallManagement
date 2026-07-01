@@ -1,9 +1,7 @@
 <?php
-// Memulakan sesi dan memanggil fail sambungan database
 session_start();
 include('db_connection.php');
 
-// Contoh semakan login klien (pastikan $_SESSION['client_id'] telah diisytiharkan semasa login)
 if (!isset($_SESSION['client_id'])) {
     header("Location: login.php");
     exit();
@@ -11,7 +9,6 @@ if (!isset($_SESSION['client_id'])) {
 
 $client_id = $_SESSION['client_id'];
 
-// 1. Ambil maklumat nama klien yang sedang log masuk
 $client_name = "User";
 $client_query = "SELECT client_name FROM client WHERE client_id = '$client_id'";
 $client_result = mysqli_query($conn, $client_query);
@@ -20,12 +17,10 @@ if ($client_result && mysqli_num_rows($client_result) > 0) {
     $client_name = $client_row['client_name'];
 }
 
-// 2. Proses penghantaran borang tempahan (Booking Submission)
 $booking_submitted = false;
 $msg_toast = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_POST['action_type'] == 'submit_booking') {
     $venue_id = mysqli_real_escape_string($conn, $_POST['book_venue_id']);
-    // Mencari package_id pertama yang sepadan dengan venue tersebut sebagai default pakej
     $pkg_query = "SELECT package_id FROM package WHERE venue_id = '$venue_id' LIMIT 1";
     $pkg_res = mysqli_query($conn, $pkg_query);
     $package_id = ($pkg_res && mysqli_num_rows($pkg_res) > 0) ? mysqli_fetch_assoc($pkg_res)['package_id'] : "NULL";
@@ -35,7 +30,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     $booking_date = date('Y-m-d');
     $bookingstatus = "Pending";
 
-    // SEMAKAN KAPASITI VENUE DI PIHAK PHP (SERVER-SIDE)
     $capacity_query = "SELECT venue_capacity, venue_name FROM venue WHERE venue_id = '$venue_id'";
     $capacity_res = mysqli_query($conn, $capacity_query);
     $venue_data = mysqli_fetch_assoc($capacity_res);
@@ -67,8 +61,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action_type']) && $_PO
     }
 }
 
-// 3. Ambil data senarai dewan (Venues) beserta pakej pertama untuk dipaparkan di web
-// DI SINI KITA TAMBAH: WHERE v.venue_status = 'approved' supaya pending & rejected tidak akan appear
 $venues_list = [];
 $venue_sql = "SELECT v.*, p.package_name, p.package_price, p.package_id 
               FROM venue v 
@@ -82,7 +74,6 @@ if ($venue_result) {
     }
 }
 
-// 4. Ambil semua maklumat pakej secara terperinci untuk kegunaan JavaScript modal preview
 $packages_details = [];
 $pkg_sql = "SELECT * FROM package";
 $pkg_result = mysqli_query($conn, $pkg_sql);
@@ -92,7 +83,6 @@ if ($pkg_result) {
     }
 }
 
-// 5. Ambil data senarai tempahan milik klien ini (My Bookings)
 $my_bookings = [];
 $booking_sql = "SELECT b.*, v.venue_name, p.package_name 
                 FROM booking b
@@ -1044,7 +1034,6 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
     </div>
 
     <script>
-        // Menyimpan data maklumat pakej daripada pangkalan data PHP ke format JSON JavaScript
         const dbPackages = <?php echo json_encode($packages_details);
                             ?>;
 
@@ -1079,7 +1068,6 @@ font-size: 20px; margin-bottom: 20px; color: #1a202c;">My Booking</h3>
                 const venueArea = card.getAttribute('data-area').toLowerCase();
                 const venueName = card.querySelector('h4').textContent.toLowerCase();
 
-                // Semak sama ada input sepadan dengan kawasan ATAU nama dewan
                 if (venueArea.includes(searchInput) || venueName.includes(searchInput)) {
                     card.style.display = 'flex';
 

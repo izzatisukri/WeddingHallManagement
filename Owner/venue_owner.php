@@ -5,7 +5,6 @@ include('db_connection.php');
 
 if (!isset($_SESSION['owner_id'])) {
     $_SESSION['owner_id'] = 1;
-    // Tukar atau buang baris ini setelah sistem login sedia
 }
 $owner_id = $_SESSION['owner_id'];
 
@@ -47,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'edit_venue') {
     $edit_v_id = intval($_POST['edit_venue_id']);
-    $edit_v_owner = mysqli_real_escape_string($conn, $_POST['edit_v_owner']); // Ambil nama owner baru
+    $edit_v_owner = mysqli_real_escape_string($conn, $_POST['edit_v_owner']); 
     $edit_v_name = mysqli_real_escape_string($conn, $_POST['edit_v_name']);
     $edit_v_address = mysqli_real_escape_string($conn, $_POST['edit_v_address']);
     $edit_v_capacity = intval($_POST['edit_v_capacity']);
@@ -1086,7 +1085,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 }
             }
 
-            // Ambil data baris untuk Edit Venue (Termasuk Owner Name)
             if (modalId === 'modal-edit-venue' && type === 'venue') {
                 rowToEdit = buttonElement.closest('tr');
                 const cells = rowToEdit.getElementsByTagName('td');

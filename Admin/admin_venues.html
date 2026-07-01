@@ -608,7 +608,6 @@ td:last-child {
         document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
         document.getElementById('img-counter').textContent = isSSM ? "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
         
-        // Sembunyi atau tunjuk butang navigasi
         const navStyle = isSSM ? 'none' : 'flex';
         document.getElementById('btn-prev').style.display = navStyle;
         document.getElementById('btn-next').style.display = navStyle;

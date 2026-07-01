@@ -5,7 +5,6 @@ $error_message = "";
 $success_message = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['step']) && $_POST['step'] == '2') {
-    // Mengambil data input dan membuang ruang kosong (whitespace) yang tidak diperlukan
     $email = trim($_POST['user_email']);
     $new_password = $_POST['new_password'];
     $confirm_password = $_POST['confirm_password'];

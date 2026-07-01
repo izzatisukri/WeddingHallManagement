@@ -1,8 +1,6 @@
 <?php
-// Menyertakan fail sambungan database anda
 include('db_connection.php');
 
-// --- KOD PENINGKATAN: MENYIMPAN PERTUKARAN STATUS KE DATABASE (AJAX BACKGROUND PROCESS) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $status = mysqli_real_escape_string($conn, $_POST['status']);
@@ -10,7 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     
     $success = false;
     if ($role === 'client') {
-        // Cuba kemas kini lajur client_status atau status secara dinamik
         $query_update = "UPDATE client SET client_status = '$status' WHERE client_email = '$email'";
         if (mysqli_query($conn, $query_update)) {
             $success = true;
@@ -19,7 +16,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             if (mysqli_query($conn, $query_update_fallback)) { $success = true; }
         }
     } elseif ($role === 'owner') {
-        // Cuba kemas kini lajur owner_status atau status secara dinamik
         $query_update = "UPDATE venue_owner SET owner_status = '$status' WHERE owner_email = '$email'";
         if (mysqli_query($conn, $query_update)) {
             $success = true;
@@ -34,23 +30,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
     }
-    exit; // Hentikan pemprosesan script supaya tidak memaparkan kod HTML di bawah
+    exit;
 }
-// -----------------------------------------------------------------------------------------
 
-// Guna SELECT * untuk mengelakkan ralat 'Unknown column' jika nama lajur tak sepadan
 $query_client = "SELECT * FROM client";
 $result_client = mysqli_query($conn, $query_client);
 
 $query_owner = "SELECT * FROM venue_owner";
 $result_owner = mysqli_query($conn, $query_owner);
 
-// Kita kumpulkan semua data ke dalam satu array secara manual di PHP
 $users_list = [];
 
 if ($result_client && mysqli_num_rows($result_client) > 0) {
     while ($row = mysqli_fetch_assoc($result_client)) {
-        // Cari lajur status secara dinamik (sama ada client_status atau status)
         $status = isset($row['client_status']) ? $row['client_status'] : (isset($row['status']) ? $row['status'] : 'Active');
         $users_list[] = [
             'name'  => $row['client_name'],
@@ -64,7 +56,6 @@ if ($result_client && mysqli_num_rows($result_client) > 0) {
 
 if ($result_owner && mysqli_num_rows($result_owner) > 0) {
     while ($row = mysqli_fetch_assoc($result_owner)) {
-        // Cari lajur status secara dinamik (sama ada owner_status atau status)
         $status = isset($row['owner_status']) ? $row['owner_status'] : (isset($row['status']) ? $row['status'] : 'Active');
         $users_list[] = [
             'name'  => $row['owner_name'],
@@ -583,7 +574,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         let rowToDelete = null;
         let userPieChart = null;
 
-        // --- FUNGSI ASAL DIPERTINGKATKAN UNTUK MENGHANTAR DATA KEMASKINI KE DATABASE SECARA LALUAN BELAKANG (AJAX) ---
         function updateStatusStyle(selectElement) {
             const userEmail = selectElement.getAttribute('data-email');
             const userRole = selectElement.getAttribute('data-role');
@@ -597,7 +587,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                 selectElement.classList.remove('status-active');
             }
 
-            // Hantar data status baru ke pelayan PHP menggunakan Fetch API secara asynchronous
             const formData = new FormData();
             formData.append('action', 'update_status');
             formData.append('email', userEmail);

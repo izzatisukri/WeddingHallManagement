@@ -1,34 +1,25 @@
 <?php
-// 1. Memulakan sesi PHP untuk menyimpan data login pengguna
 session_start();
 
-// 2. Menyertakan fail sambungan database anda
 include('db_connection.php');
 
 $error_message = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Mengambil data input dan membersihkannya daripada ancaman SQL Injection
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $password = $_POST['password'];
     $role = mysqli_real_escape_string($conn, $_POST['role']);
 
-    // ==========================================
-    // KES 1: LOG IN SEBAGAI CLIENT
-    // ==========================================
     if ($role === 'client') {
         $query = "SELECT * FROM client WHERE client_email = '$email'";
         $result = mysqli_query($conn, $query);
         
         if ($row = mysqli_fetch_assoc($result)) {
-            // Memadankan kata laluan hashed dari database
             if (password_verify($password, $row['client_password'])) {
                 
-                // --- SEMAKAN STATUS SUSPENDED UNTUK CLIENT ---
                 $status = isset($row['client_status']) ? $row['client_status'] : (isset($row['status']) ? $row['status'] : 'Active');
                 if (strtolower(trim($status)) === 'suspended') {
                     $error_message = "Your account has been suspended!";
                 } else {
-                    // TUKAR DI SINI: Tukar 'user_id' kepada 'client_id'
                     $_SESSION['client_id'] = $row['client_id'];
                     $_SESSION['role'] = 'client';
                     $_SESSION['user_name'] = $row['client_name'];
@@ -44,27 +35,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $error_message = "Email not found in Client records!";
         }
     }
-    
-    // ==========================================
-    // KES 2: LOG IN SEBAGAI VENUE OWNER
-    // ==========================================
+
     elseif ($role === 'venue_owner') {
         $query = "SELECT * FROM venue_owner WHERE owner_email = '$email'";
         $result = mysqli_query($conn, $query);
         
         if ($row = mysqli_fetch_assoc($result)) {
-            // Memadankan kata laluan hashed dari database
             if (password_verify($password, $row['owner_password'])) {
                 
-                // --- SEMAKAN STATUS SUSPENDED UNTUK VENUE OWNER ---
                 $status = isset($row['owner_status']) ? $row['owner_status'] : (isset($row['status']) ? $row['status'] : 'Active');
                 if (strtolower(trim($status)) === 'suspended') {
                     $error_message = "Your account has been suspended! Please contact admin.";
                 } else {
-                    // DIUBAH DI SINI: Menyimpan owner_id ke dalam session untuk kegunaan venue_owner.php
                     $_SESSION['owner_id'] = $row['owner_id'];
                     $_SESSION['role'] = 'venue_owner';
-                    // MENYIMPAN NAMA LOGIN: Untuk ditarik sebagai "Welcome, nama_owner" di page seterusnya
                     $_SESSION['user_name'] = $row['owner_name'];
                     header("Location: venue_owner.php");
                     exit();
@@ -78,21 +62,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
     
-    // ==========================================
-    // KES 3: LOG IN SEBAGAI ADMIN
-    // ==========================================
     elseif ($role === 'admin') {
         $query = "SELECT * FROM admin WHERE admin_email = '$email'";
         $result = mysqli_query($conn, $query);
         
         if ($row = mysqli_fetch_assoc($result)) {
-            // Memadankan kata laluan hashed dari database
             if (password_verify($password, $row['admin_password'])) {
                 $_SESSION['user_id'] = $row['admin_id'];
                 $_SESSION['role'] = 'admin';
                 $_SESSION['user_name'] = $row['admin_name'];
                 
-                // PEMBETULAN DI SINI: Dibuang "Admin/" kerana fail berada di folder yang sama
                 header("Location: admin_dashboard.php");
                 exit();
             } else {

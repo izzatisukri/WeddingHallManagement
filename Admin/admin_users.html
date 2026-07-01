@@ -519,7 +519,6 @@ td:last-child {
         let ownerCount = 0;
 
         rows.forEach(row => {
-            // Role kini berada di index 3 selepas pertukaran lajur
             const role = row.cells[3].textContent.trim().toLowerCase();
             if (role === 'client') {
                 clientCount++;

@@ -239,13 +239,11 @@ body {
             
             const email = document.getElementById('email').value.toLowerCase();
 
-            // Sistem mengesan peranan secara automatik melalui kata kunci ejaan emel
             if (email.includes('admin')) {
                 window.location.href = 'admin_dashboard.html';
             } else if (email.includes('owner')) {
                 window.location.href = 'venue_owner.html';
             } else {
-                // Untuk semua emel customer atau emel biasa (cth: customer@gmail.com)
                 window.location.href = 'client.html';
             }
         });

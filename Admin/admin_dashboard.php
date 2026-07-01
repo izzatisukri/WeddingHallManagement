@@ -1,8 +1,6 @@
 <?php
-// 1. Sertakan fail sambungan pangkalan data anda
 include 'db_connection.php';
 
-// 2. Ambil semua data venue dinamik yang telah ditambah oleh venue owner
 $venue_query = "SELECT venue_id, venue_name FROM venue";
 $venue_result = mysqli_query($conn, $venue_query);
 
@@ -13,10 +11,9 @@ if ($venue_result && mysqli_num_rows($venue_result) > 0) {
     }
 }
 
-// 3. Ambil data tempahan (booking) untuk diproses oleh JavaScript di bawah
 $booking_query = "SELECT venue_id, MONTHNAME(event_date) as b_month, YEAR(event_date) as b_year, COUNT(booking_id) as total_bookings 
                   FROM booking 
-                  WHERE bookingstatus = 'Confirmed' OR bookingstatus = 'Approved' -- Tukar mengikut status sistem anda
+                  WHERE bookingstatus = 'Confirmed' OR bookingstatus = 'Approved'
                   GROUP BY venue_id, b_month, b_year";
 $booking_result = mysqli_query($conn, $booking_query);
 
@@ -263,19 +260,17 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Memperbaiki bahagian bars-area supaya boleh slide/scroll horizontal apabila list dewan terlalu banyak */
 .bars-area {
     position: absolute;
     left: 25px;
-    bottom: 0px; /* Diturunkan sedikit ke bawah bagi ruang teks tidak terpotong */
+    bottom: 0px;
     width: calc(100% - 25px);
-    height: 290px; /* Tingkatkan height keseluruhan kontainer bagi menampung teks nama dewan */
+    height: 290px;
     display: flex;
     gap: 40px;
     padding-left: 20px;
-    padding-bottom: 40px; /* Jarak untuk label di bawah */
-    align-items: flex-end;
-    overflow-x: auto; /* Membenarkan slide/scroll ke kanan dan kiri */
+    padding-bottom: 40px;
+    overflow-x: auto;
     white-space: nowrap;
 }
 
@@ -490,7 +485,6 @@ body {
 
             <div class="bars-area">
                 <?php 
-                // Loop untuk memaparkan nama dewan secara dinamik mengikut data pangkalan data
                 if (!empty($venues)): 
                     foreach ($venues as $venue): 
                 ?>
@@ -521,9 +515,7 @@ body {
 </div>
 
 <script>
-    // Menyimpan data booking dari PHP ke dalam objek JavaScript JSON
     const databaseBookings = <?php echo json_encode($booking_data); ?>;
-    // Menyimpan senarai senarai venue dari PHP ke JavaScript
     const currentVenues = <?php echo json_encode($venues); ?>;
 
     function openModal(modalId) {
@@ -542,7 +534,6 @@ body {
         const month = document.getElementById('month-select').value;
         const year = document.getElementById('year-select').value;
 
-        // Reset semua bar ke 0% terlebih dahulu
         currentVenues.forEach(v => {
             const barElement = document.getElementById(`bar-id-${v.venue_id}`);
             if (barElement) barElement.style.height = "0%";
@@ -553,16 +544,14 @@ body {
             return;
         }
 
-        // Tapis data pangkalan data berdasarkan bulan dan tahun yang dipilih user
         let matchFound = false;
         
         databaseBookings.forEach(booking => {
             if (booking.b_month === month && booking.b_year === year) {
                 const barElement = document.getElementById(`bar-id-${booking.venue_id}`);
                 if (barElement) {
-                    // Maksimum grid chart ialah 6. Kira peratusan: (jumlah_booking / 6) * 100
                     let total = parseInt(booking.total_bookings);
-                    if (total > 6) total = 6; // Hadkan tinggi ke 100% jika lebih dari 6
+                    if (total > 6) total = 6;
                     
                     const heightPercent = (total / 6) * 100;
                     barElement.style.height = `${heightPercent}%`;

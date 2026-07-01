@@ -1,22 +1,17 @@
 <?php
-// Memasukkan fail sambungan pangkalan data anda
 include('db_connection.php');
 
-// LOGIK UTAMA ADMIN: Memproses kelulusan atau penolakan status venue jika borang dihantar
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action_admin'])) {
     $target_venue_id = mysqli_real_escape_string($conn, $_POST['venue_id']);
-    $action_type = mysqli_real_escape_string($conn, $_POST['action_admin']); // Nilai 'approved', 'rejected', atau 'pending'
+    $action_type = mysqli_real_escape_string($conn, $_POST['action_admin']);
     
-    // Kemas kini lajur venue_status di dalam pangkalan data berdasarkan venue_id
     $update_query = "UPDATE venue SET venue_status = '$action_type' WHERE venue_id = '$target_venue_id'";
     mysqli_query($conn, $update_query);
     
-    // Set mesej untuk dipaparkan pada toast notification nanti
     $toast_backend_message = "Venue status successfully updated to " .
     ucfirst($action_type) . "!";
 }
 
-// Query untuk mengambil data maklumat venue (menggabungkan table venue, venue_owner, dan admin)
 $query = "SELECT v.*, vo.owner_name, a.admin_id 
           FROM venue v
           LEFT JOIN venue_owner vo ON v.owner_id = vo.owner_id
@@ -556,11 +551,9 @@ td:last-child {
                 </thead>
                  <tbody>
                     <?php
-                    // Memeriksa sekiranya data berjaya diambil dari database
                     if (mysqli_num_rows($result) > 0) {
                          while ($row = mysqli_fetch_assoc($result)) {
-                            // Mengambil data mengikut kolum dalam ERD database anda
-                            $venue_id = $row['venue_id']; // ID disimpan untuk keperluan borang kelulusan status
+                            $venue_id = $row['venue_id'];
                             $owner_name = htmlspecialchars($row['owner_name']);
                             $venue_name = htmlspecialchars($row['venue_name']);
                             $venue_location = htmlspecialchars($row['venue_location']);
@@ -568,10 +561,8 @@ td:last-child {
                             $venue_image = htmlspecialchars($row['venue_image']);
                             $venue_ssm = htmlspecialchars($row['venue_ssm']);
                             $venue_ssm_file = htmlspecialchars($row['venue_ssm_file']);
-                            // Mendapatkan status sebenar dewan daripada pangkalan data
                             $venue_status = isset($row['venue_status']) ? strtolower($row['venue_status']) : 'pending';
 
-// PERBAIKAN LOGIK PHP: Menentukan kelas warna mengikut tiga keadaan status yang tepat
 if ($venue_status == 'rejected') {
     $status_class = 'select-rejected';
 } elseif ($venue_status == 'pending') {
@@ -607,7 +598,6 @@ if ($venue_status == 'rejected') {
                     <?php
                          }
                     } else {
-                        // Memaparkan mesej sekiranya tiada sebarang data dalam database
                         echo "<tr><td colspan='7' style='text-align:center;'>No venues found in database.</td></tr>";
                     }
                     ?>
@@ -655,13 +645,11 @@ if ($venue_status == 'rejected') {
     let myPieChart = null; 
     let currentImages = [];
     let currentIdx = 0;
-    // Fungsi baharu untuk mengemas kini warna dropdown dan menghantar borang POST secara automatik ke fail PHP ini
     function submitStatusForm(venueId, selectElement) {
         updateDropdownColor(selectElement);
         document.getElementById('form-status-' + venueId).submit();
     }
 
-    // PERBAIKAN BARU: Mengendalikan pertukaran warna javascript bagi keadaan pending sebelum submit dilakukan
     function updateDropdownColor(selectElement) {
     if (selectElement.value === 'approved') {
         selectElement.className = 'package-select select-approved';
@@ -674,7 +662,6 @@ if ($venue_status == 'rejected') {
     }
 }
 
-    // Fungsi modal imej
     function openImageModal(imageArray, title, isSSM) {
         currentImages = imageArray;
         currentIdx = 0;
@@ -682,7 +669,6 @@ if ($venue_status == 'rejected') {
         document.getElementById('img-gallery-placeholder').src = currentImages[currentIdx];
         document.getElementById('img-counter').textContent = isSSM ? "" : `Picture ${currentIdx + 1} of ${currentImages.length}`;
         
-        // Sembunyi atau tunjuk butang navigasi
         const navStyle = isSSM ? 'none' : 'flex';
         document.getElementById('btn-prev').style.display = navStyle;
         document.getElementById('btn-next').style.display = navStyle;
@@ -812,7 +798,6 @@ if ($venue_status == 'rejected') {
         }
     }
 
-    // Memaparkan toast daripada backend PHP sebaik sahaja data berjaya dikemas kini
     <?php if(isset($toast_backend_message) && !empty($toast_backend_message)): ?>
         window.addEventListener('DOMContentLoaded', () => {
             triggerToast("<?php echo $toast_backend_message; ?>");

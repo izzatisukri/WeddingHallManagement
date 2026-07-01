@@ -853,7 +853,6 @@ body {
             const venueArea = card.getAttribute('data-area').toLowerCase();
             const venueName = card.querySelector('h4').textContent.toLowerCase();
 
-            // Semak sama ada input sepadan dengan kawasan ATAU nama dewan
             if (venueArea.includes(searchInput) || venueName.includes(searchInput)) {
                 card.style.display = 'flex'; 
                 foundCount++;

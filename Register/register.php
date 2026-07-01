@@ -1,43 +1,31 @@
 <?php
-// Mula session di bahagian paling atas sekali untuk membolehkan penyimpanan data user baru
 session_start();
 
-// 1. Menyertakan fail sambungan database anda
 include('db_connection.php');
 
-// Memulakan pembolehubah mesej ralat/kejayaan untuk dipassing ke JavaScript modal
 $registration_status = "";
 $message_content = "";
-$role = ""; // Diisytiharkan awal untuk mengelakkan ralat 'undefined variable' di bahagian JavaScript
+$role = ""; 
 
-// 2. Memproses data borang apabila butang REGISTER diklik (POST)
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    // Mengambil data input dan membersihkannya (Sanitization)
     $fullname = mysqli_real_escape_string($conn, $_POST['fullname'] ?? ''); 
     $email    = mysqli_real_escape_string($conn, $_POST['email'] ?? '');
     $phone    = mysqli_real_escape_string($conn, $_POST['phone'] ?? '');
     $password = $_POST['password'] ?? '';
     $role     = mysqli_real_escape_string($conn, $_POST['role'] ?? '');
 
-    // Pembidaan regex keselamatan password sebelah server (sepadan dengan input pattern HTML)
     $passwordRegex = '/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{6,}$/';
 
     if (!preg_match($passwordRegex, $password)) {
         $registration_status = "error";
         $message_content = "Password must be at least 6 characters with uppercase, lowercase, and symbols!";
     } else {
-        // Enkripsi kata laluan demi keselamatan pangkalan data
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
         
-        // Atribut status lalai bagi pendaftaran akaun baru
         $default_status = "Active";
 
-        // ==========================================
-        // KES 1: PENDAFTARAN SEBAGAI ADMIN
-        // ==========================================
         if ($role === 'admin') {
-            // Semakan mengehadkan hanya 1 Admin sahaja di dalam jadual 'admin'
             $check_admin_query = "SELECT COUNT(*) AS total_admin FROM admin";
             $check_admin_result = mysqli_query($conn, $check_admin_query);
             $admin_data = mysqli_fetch_assoc($check_admin_result);
@@ -46,19 +34,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $registration_status = "error";
                 $message_content = "Registration failed! An Admin account already exists. Only one Admin is allowed.";
             } else {
-                // Semakan duplikasi e-mel unik dalam jadual 'admin'
                 $check_email = mysqli_query($conn, "SELECT admin_id FROM admin WHERE admin_email = '$email'");
                 if (mysqli_num_rows($check_email) > 0) {
                     $registration_status = "error";
                     $message_content = "Email address is already registered as an Admin!";
                 } else {
-                    // Proses memasukkan data ke jadual 'admin' (Tiada admin_status/client_status di jadual ini)
                     $insert_query = "INSERT INTO admin (admin_name, admin_email, admin_password, admin_role) 
-                                     VALUES ('$fullname', '$email', '$hashed_password', 'admin')";
+                                      VALUES ('$fullname', '$email', '$hashed_password', 'admin')";
                     if (mysqli_query($conn, $insert_query)) {
                         $registration_status = "success";
                         
-                        // Set session supaya admin dashboard kenal nama baru mendaftar
                         $_SESSION['admin_id'] = mysqli_insert_id($conn);
                         $_SESSION['admin_name'] = $fullname;
                         $_SESSION['admin_role'] = 'admin';
@@ -69,23 +54,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
         }
-        // ==========================================
-        // KES 2: PENDAFTARAN SEBAGAI CLIENT
-        // ==========================================
+
         elseif ($role === 'client') {
-            // Semakan duplikasi e-mel dalam jadual 'client'
             $check_email = mysqli_query($conn, "SELECT client_id FROM client WHERE client_email = '$email'");
             if (mysqli_num_rows($check_email) > 0) {
                 $registration_status = "error";
                 $message_content = "Email address is already registered as a Client!";
             } else {
-                // Proses memasukkan data ke jadual 'client' mengikut struktur ERD gambar rajah
                 $insert_query = "INSERT INTO client (client_name, client_email, client_phonenum, client_password, client_role, client_status) 
                                  VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'client', '$default_status')";
                 if (mysqli_query($conn, $insert_query)) {
                     $registration_status = "success";
                     
-                    // Set session supaya client dashboard kenal nama baru mendaftar
                     $_SESSION['client_id'] = mysqli_insert_id($conn);
                     $_SESSION['client_name'] = $fullname;
                     $_SESSION['client_role'] = 'client';
@@ -95,23 +75,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
         }
-        // ==========================================
-        // KES 3: PENDAFTARAN SEBAGAI VENUE OWNER
-        // ==========================================
+
         elseif ($role === 'venue_owner') {
-            // Semakan duplikasi e-mel dalam jadual 'venue_owner'
             $check_email = mysqli_query($conn, "SELECT owner_id FROM venue_owner WHERE owner_email = '$email'");
             if (mysqli_num_rows($check_email) > 0) {
                 $registration_status = "error";
                 $message_content = "Email address is already registered as a Venue Owner!";
             } else {
-                // Proses memasukkan data ke jadual 'venue_owner' mengikut struktur ERD gambar rajah
                 $insert_query = "INSERT INTO venue_owner (owner_name, owner_email, owner_phonenum, owner_password, owner_role, owner_status) 
                                  VALUES ('$fullname', '$email', '$phone', '$hashed_password', 'venue_owner', '$default_status')";
                 if (mysqli_query($conn, $insert_query)) {
                     $registration_status = "success";
                     
-                    // Set session supaya venue_owner.php kenal nama baru mendaftar
                     $_SESSION['owner_id'] = mysqli_insert_id($conn);
                     $_SESSION['owner_name'] = $fullname;
                     $_SESSION['owner_role'] = 'venue_owner';
@@ -433,7 +408,6 @@ body {
     </div>
 
     <script>
-        // Membaca status pemrosesan backend PHP secara dinamik
         const phpStatus = "<?php echo $registration_status; ?>";
         const phpMessage = "<?php echo $message_content; ?>";
         const chosenRole = "<?php echo $role; ?>";
@@ -442,7 +416,6 @@ body {
         const modalMessage = document.getElementById('modalMessage');
         const modalOkBtn = document.getElementById('modalOkBtn');
 
-        // Jika terdapat tindak balas daripada PHP selepas hantar form
         if (phpStatus === "success") {
             modalMessage.innerText = 'Registration Successful! Please click OK to go to your page.';
             modal.classList.add('active');
@@ -465,7 +438,6 @@ body {
             };
         }
 
-        // Pengesahan JS untuk mengelakkan ralat sebelum hantar ke PHP
         document.getElementById('registerForm').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
