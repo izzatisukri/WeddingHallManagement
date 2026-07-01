@@ -1,6 +1,38 @@
 <?php
 include('db_connection.php');
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_status') {
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $status = mysqli_real_escape_string($conn, $_POST['status']);
+    $role = strtolower(trim($_POST['role']));
+    
+    $success = false;
+    if ($role === 'client') {
+        $query_update = "UPDATE client SET client_status = '$status' WHERE client_email = '$email'";
+        if (mysqli_query($conn, $query_update)) {
+            $success = true;
+        } else {
+            $query_update_fallback = "UPDATE client SET status = '$status' WHERE client_email = '$email'";
+            if (mysqli_query($conn, $query_update_fallback)) { $success = true; }
+        }
+    } elseif ($role === 'owner') {
+        $query_update = "UPDATE venue_owner SET owner_status = '$status' WHERE owner_email = '$email'";
+        if (mysqli_query($conn, $query_update)) {
+            $success = true;
+        } else {
+            $query_update_fallback = "UPDATE venue_owner SET status = '$status' WHERE owner_email = '$email'";
+            if (mysqli_query($conn, $query_update_fallback)) { $success = true; }
+        }
+    }
+    
+    if ($success) {
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+    }
+    exit; 
+}
+
 $query_client = "SELECT * FROM client";
 $result_client = mysqli_query($conn, $query_client);
 
@@ -183,7 +215,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             border-bottom: 1px solid #edf2f7;
         }
 
-        /* TAMBAHAN: Menyusun susunan tajuk dan sub-menu rapat */
         .section-title-container {
             display: flex;
             flex-direction: column;
@@ -423,7 +454,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             <div class="nav-links">
                 <a href="admin_dashboard.php">Dashboard</a>
                 <a href="admin_venues.php">All Venues</a>
-                <a href="admin_packages.php">All Packages</a>
+           
+                 <a href="admin_packages.php">All Packages</a>
                 <a href="admin_users.php" class="active">All Users</a>
                 <a href="admin_bookings.php">All Bookings</a>
                 <a class="logout" onclick="openModal('modal-logout-confirmation', this)">Log out</a>
@@ -431,7 +463,8 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         </div>
 
         <div class="welcome-banner">
-            <h2>Welcome, Admin! 👑</h2>
+       
+             <h2>Welcome, Admin! 👑</h2>
             <p>Manage users, venues and generate reports.</p>
         </div>
 
@@ -439,10 +472,12 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             <div class="section-header">
                 <div class="section-title-container">
                     <h3>All Users</h3>
+      
                     <div class="sub-nav">
                         <span id="sub-chart" onclick="toggleView('chart')">Chart</span>
                         <span id="sub-list" class="active-sub" onclick="toggleView('list')">List</span>
                     </div>
+            
                 </div>
             </div>
 
@@ -452,18 +487,22 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
             <div id="view-list" style="display: block;">
                 <table id="table-users">
+         
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
+         
                             <th>Phone Number</th>
                             <th>Role</th>
                             <th>Status</th>
+                        
                         </tr>
                     </thead>
                     <tbody>
                         <?php
                         if (!empty($users_list)) {
+          
                             foreach ($users_list as $user) {
                                 $currentStatus = ucfirst(strtolower(trim($user['status'])));
                                 $statusClass = ($currentStatus === 'Suspended') ? 'status-suspended' : 'status-active';
@@ -474,15 +513,21 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                                     <td><?php echo htmlspecialchars($user['phone']); ?></td>
                                     <td><?php echo htmlspecialchars($user['role']); ?></td>
                                     <td>
-                                        <select class="status-select <?php echo $statusClass; ?>" onchange="updateStatusStyle(this)">
+                                        <select class="status-select <?php echo $statusClass; ?>" 
+                                                data-email="<?php echo htmlspecialchars($user['email']); ?>" 
+                                                data-role="<?php echo htmlspecialchars($user['role']); ?>" 
+                                                onchange="updateStatusStyle(this)">
+                  
                                             <option value="Active" style="color: #2f855a;" <?php echo ($currentStatus === 'Active' || $currentStatus === '') ? 'selected' : ''; ?>>Active</option>
                                             <option value="Suspended" style="color: #dd6b20;" <?php echo ($currentStatus === 'Suspended') ? 'selected' : ''; ?>>Suspended</option>
                                         </select>
                                     </td>
+               
                                 </tr>
                         <?php
                             }
                         } else {
+     
                             echo "<tr><td colspan='5' style='text-align:center;'>No users found.</td></tr>";
                         }
                         ?>
@@ -494,14 +539,15 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
     <div class="container">
         <div class="toast-notification" id="toast-global"></div>
+ 
     </div>
 
     <div id="modal-delete-confirmation" class="modal-overlay">
         <div class="modal-box-delete">
-            <p>Are you sure you want to delete this user? This action cannot be undone.</p>
+            <p>Are you sure you want to delete this user?
+            This action cannot be undone.</p>
             <div class="form-actions" style="justify-content: center; margin-top: 0;">
-                <button type="button" class="btn-cancel" style="padding: 10px 24px;"
-                    onclick="closeModal('modal-delete-confirmation')">Cancel</button>
+                <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-delete-confirmation')">Cancel</button>
                 <button type="button" class="btn-confirm-ok" id="btn-confirm-delete-action">Delete</button>
             </div>
         </div>
@@ -509,10 +555,10 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
 
     <div id="modal-logout-confirmation" class="modal-overlay">
         <div class="modal-box-delete">
-            <p>Are you sure you want to log out? You will need to login again to access the panel.</p>
+            <p>Are you sure you want to log out?
+            You will need to login again to access the panel.</p>
             <div class="form-actions" style="justify-content: center; margin-top: 0;">
-                <button type="button" class="btn-cancel" style="padding: 10px 24px;"
-                    onclick="closeModal('modal-logout-confirmation')">Cancel</button>
+                <button type="button" class="btn-cancel" style="padding: 10px 24px;" onclick="closeModal('modal-logout-confirmation')">Cancel</button>
                 <button type="button" class="btn-confirm-ok" id="btn-confirm-logout-action">Log Out</button>
             </div>
         </div>
@@ -523,15 +569,40 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
         let userPieChart = null;
 
         function updateStatusStyle(selectElement) {
-            if (selectElement.value === "Active") {
+            const userEmail = selectElement.getAttribute('data-email');
+            const userRole = selectElement.getAttribute('data-role');
+            const newStatus = selectElement.value;
+
+            if (newStatus === "Active") {
                 selectElement.classList.add('status-active');
                 selectElement.classList.remove('status-suspended');
-                triggerToast("User status updated to Active!");
-            } else if (selectElement.value === "Suspended") {
+            } else if (newStatus === "Suspended") {
                 selectElement.classList.add('status-suspended');
                 selectElement.classList.remove('status-active');
-                triggerToast("User status updated to Suspended!");
             }
+
+            const formData = new FormData();
+            formData.append('action', 'update_status');
+            formData.append('email', userEmail);
+            formData.append('status', newStatus);
+            formData.append('role', userRole);
+
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === 'success') {
+                    triggerToast("User status updated to " + newStatus + " & saved successfully!");
+                } else {
+                    alert("Database update failed: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while updating status in the database.");
+            });
         }
 
         function toggleView(viewType) {
@@ -539,7 +610,6 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
             const listView = document.getElementById('view-list');
             const subChart = document.getElementById('sub-chart');
             const subList = document.getElementById('sub-list');
-
             if (viewType === 'chart') {
                 chartView.style.display = 'block';
                 listView.style.display = 'none';
@@ -563,13 +633,13 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                 if (row.cells.length >= 4) {
                     const role = row.cells[3].textContent.trim().toLowerCase();
                     if (role === 'client') {
+                       
                         clientCount++;
                     } else if (role === 'owner') {
                         ownerCount++;
                     }
                 }
             });
-
             if (userPieChart) {
                 userPieChart.destroy();
             }
@@ -580,26 +650,32 @@ if ($result_owner && mysqli_num_rows($result_owner) > 0) {
                 data: {
                     labels: ['Client', 'Owner'],
                     datasets: [{
+                   
                         label: 'Total Users',
                         data: [clientCount, ownerCount],
                         backgroundColor: [
                             '#710349',
+              
                             '#4a042e',
                             '#ed64a6',
                             '#ecc94b'
                         ],
+      
                         borderWidth: 1
                     }]
                 },
                 options: {
                     responsive: true,
+       
                     plugins: {
                         legend: {
                             position: 'top',
                         },
+        
                         title: {
                             display: true,
                             text: 'Breakdown of User Roles'
+                      
                         }
                     }
                 }
